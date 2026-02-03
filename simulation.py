@@ -1,120 +1,111 @@
-# ============================================================
-# SIMULACIÓN DE RESONADOR MAGNÉTICO
-# Agenda densa + demanda constante
-# Bloque horario: 08:00 a 20:00 (720 minutos)
-# ============================================================
-
 import random
+from datetime import timedelta
 
 # -----------------------------
-# PARÁMETROS GENERALES
+# CONFIGURACIÓN GENERAL
 # -----------------------------
+HORA_APERTURA = 8 * 60          # 08:00 en minutos
+HORA_CIERRE = 20 * 60           # 20:00 en minutos
+JORNADA = HORA_CIERRE - HORA_APERTURA
 
-INICIO_DIA = 0
-FIN_DIA = 720  # 12 horas * 60 minutos
+random.seed()
 
-# Estudios simbólicos (duración estimada en minutos)
+# -----------------------------
+# DISTRIBUCIONES
+# -----------------------------
+def triangular(a, b, c):
+    return round(random.triangular(a, b, c), 2)
+
+# -----------------------------
+# TIPOS DE ESTUDIO
+# -----------------------------
 ESTUDIOS = {
-    "cerebro": 30,
-    "columna": 40,
-    "abdomen": 45
+    "Cerebro": {
+        "prob": 0.25,
+        "scan": (18, 22, 25)
+    },
+    "Columna": {
+        "prob": 0.25,
+        "scan": (20, 25, 30)
+    },
+    "Articulaciones": {
+        "prob": 0.33,
+        "scan": (15, 18, 22)
+    },
+    "Cuerpo completo": {
+        "prob": 0.02,
+        "scan": (35, 40, 45)
+    },
+    "Otros": {
+        "prob": 0.15,
+        "scan": (20, 25, 30)
+    }
 }
 
-# Distribución del tiempo de cambiador (min, moda, max)
-CAMBIADOR_MIN = 5
-CAMBIADOR_MODA = 10
-CAMBIADOR_MAX = 20
-
-
-# -----------------------------
-# FUNCIONES AUXILIARES
-# -----------------------------
-
-def tiempo_cambiador():
-    """
-    Tiempo que tarda una persona en cambiarse.
-    Independiente del tipo de estudio.
-    """
-    return random.triangular(
-        CAMBIADOR_MIN,
-        CAMBIADOR_MAX,
-        CAMBIADOR_MODA
-    )
-
-
-def seleccionar_estudio():
-    """
-    Selecciona un estudio de forma aleatoria.
-    Demanda constante.
-    """
-    return random.choice(list(ESTUDIOS.keys()))
-
+def elegir_estudio():
+    r = random.random()
+    acumulado = 0
+    for estudio, data in ESTUDIOS.items():
+        acumulado += data["prob"]
+        if r <= acumulado:
+            return estudio
+    return "Otros"
 
 # -----------------------------
-# SIMULACIÓN PRINCIPAL
+# SIMULACIÓN
 # -----------------------------
-
 def simular_dia():
-    reloj = INICIO_DIA
-    resonador_libre = INICIO_DIA
-
-    pacientes = []
+    tiempo_actual = 0
     paciente_id = 1
+    resultados = []
 
-    while True:
-        estudio = seleccionar_estudio()
-        duracion_estudio = ESTUDIOS[estudio]
-        duracion_cambio = tiempo_cambiador()
+    while tiempo_actual < JORNADA:
+        estudio = elegir_estudio()
 
-        fin_cambio = reloj + duracion_cambio
+        llegada = triangular(0, 10, 30)
+        validacion = triangular(3, 5, 8)
+        cambiador = triangular(5, 8, 15)
+        scan = triangular(*ESTUDIOS[estudio]["scan"])
+        salida = triangular(2, 3, 6)
 
-        inicio_estudio = max(fin_cambio, resonador_libre)
-        fin_estudio = inicio_estudio + duracion_estudio
+        inicio_servicio = max(tiempo_actual, llegada)
+        fin_servicio = inicio_servicio + validacion + cambiador + scan + salida
 
-        if fin_estudio > FIN_DIA:
+        if fin_servicio > JORNADA:
             break
 
-        pacientes.append({
-            "paciente": paciente_id,
-            "estudio": estudio,
-            "cambio": round(duracion_cambio, 2),
-            "inicio_estudio": round(inicio_estudio, 2),
-            "fin_estudio": round(fin_estudio, 2)
+        resultados.append({
+            "Paciente": paciente_id,
+            "Estudio": estudio,
+            "Llegada": llegada,
+            "Horario llegada": HORA_APERTURA + llegada,
+            "Validación": validacion,
+            "Cambiador": cambiador,
+            "Scan": scan,
+            "Salida": salida,
+            "Tiempo total servicio": fin_servicio - llegada
         })
 
-        resonador_libre = fin_estudio
-        reloj = inicio_estudio
+        tiempo_actual = fin_servicio
         paciente_id += 1
 
-    return pacientes
-
+    return resultados
 
 # -----------------------------
 # EJECUCIÓN
 # -----------------------------
+print("\nSIMULACIÓN COMPLETA DEL DÍA\n")
 
-def main():
-    pacientes = simular_dia()
+datos = simular_dia()
 
-    print("\nSIMULACIÓN COMPLETA DEL DÍA")
-    print("-" * 40)
+for d in datos:
+    print(
+        f"Paciente {d['Paciente']:>2} | "
+        f"{d['Estudio']:<15} | "
+        f"Llegada: {d['Llegada']:>6} min | "
+        f"Total servicio: {d['Tiempo total servicio']:>6} min"
+    )
 
-    for p in pacientes:
-        print(
-            f"Paciente {p['paciente']:>3} | "
-            f"Estudio: {p['estudio']:<8} | "
-            f"Cambio: {p['cambio']:>5} min | "
-            f"Inicio: {p['inicio_estudio']:>6} | "
-            f"Fin: {p['fin_estudio']:>6}"
-        )
+print(f"\nTotal de estudios realizados: {len(datos)}")
 
-    print("\n----------------------------------------")
-    print(f"Total de estudios realizados: {len(pacientes)}")
-    print(f"Tiempo total utilizado del resonador: {round(pacientes[-1]['fin_estudio'], 2)} minutos")
-    print("----------------------------------------")
-
-    input("\nPresioná ENTER para cerrar el programa...")
-
-
-if __name__ == "__main__":
-    main()
+input("\nPresioná ENTER para cerrar el programa...")
