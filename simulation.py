@@ -1,100 +1,120 @@
+# ============================================================
+# SIMULACIÓN DE RESONADOR MAGNÉTICO
+# Agenda densa + demanda constante
+# Bloque horario: 08:00 a 20:00 (720 minutos)
+# ============================================================
+
 import random
 
-# =========================
-# CONFIGURACIÓN GENERAL
-# =========================
+# -----------------------------
+# PARÁMETROS GENERALES
+# -----------------------------
 
-START_MINUTE = 0
-END_MINUTE = 12 * 60  # 12 horas = 720 minutos
+INICIO_DIA = 0
+FIN_DIA = 720  # 12 horas * 60 minutos
 
-# Duraciones simbólicas por tipo de estudio (minutos)
-STUDIES = {
-    "Cerebro": 30,
-    "Columna": 30,
-    "Articulaciones": 25,
-    "Cuerpo completo": 60,
-    "Otros": 20
+# Estudios simbólicos (duración estimada en minutos)
+ESTUDIOS = {
+    "cerebro": 30,
+    "columna": 40,
+    "abdomen": 45
 }
 
-STUDY_PROBABILITIES = [
-    ("Cerebro", 0.25),
-    ("Columna", 0.25),
-    ("Articulaciones", 0.33),
-    ("Cuerpo completo", 0.02),
-    ("Otros", 0.15)
-]
+# Distribución del tiempo de cambiador (min, moda, max)
+CAMBIADOR_MIN = 5
+CAMBIADOR_MODA = 10
+CAMBIADOR_MAX = 20
 
-# Cambiador (tiempo variable independiente del estudio)
-CHANGING_TIME = {
-    "min": 5,
-    "mode": 10,
-    "max": 20
-}
 
-# =========================
+# -----------------------------
 # FUNCIONES AUXILIARES
-# =========================
-
-def elegir_estudio():
-    r = random.random()
-    acumulado = 0
-    for estudio, prob in STUDY_PROBABILITIES:
-        acumulado += prob
-        if r <= acumulado:
-            return estudio
-    return "Otros"
-
+# -----------------------------
 
 def tiempo_cambiador():
+    """
+    Tiempo que tarda una persona en cambiarse.
+    Independiente del tipo de estudio.
+    """
     return random.triangular(
-        CHANGING_TIME["min"],
-        CHANGING_TIME["max"],
-        CHANGING_TIME["mode"]
+        CAMBIADOR_MIN,
+        CAMBIADOR_MAX,
+        CAMBIADOR_MODA
     )
 
-# =========================
-# SIMULACIÓN
-# =========================
+
+def seleccionar_estudio():
+    """
+    Selecciona un estudio de forma aleatoria.
+    Demanda constante.
+    """
+    return random.choice(list(ESTUDIOS.keys()))
+
+
+# -----------------------------
+# SIMULACIÓN PRINCIPAL
+# -----------------------------
 
 def simular_dia():
-    reloj = START_MINUTE
-    resonador_libre = START_MINUTE
-    pacientes = 0
+    reloj = INICIO_DIA
+    resonador_libre = INICIO_DIA
 
-    eventos = []
+    pacientes = []
+    paciente_id = 1
 
-    while reloj < END_MINUTE:
-        estudio = elegir_estudio()
-        duracion_estudio = STUDIES[estudio]
-        t_cambio = tiempo_cambiador()
+    while True:
+        estudio = seleccionar_estudio()
+        duracion_estudio = ESTUDIOS[estudio]
+        duracion_cambio = tiempo_cambiador()
 
-        inicio_estudio = max(reloj + t_cambio, resonador_libre)
+        fin_cambio = reloj + duracion_cambio
+
+        inicio_estudio = max(fin_cambio, resonador_libre)
         fin_estudio = inicio_estudio + duracion_estudio
 
-        if fin_estudio > END_MINUTE:
+        if fin_estudio > FIN_DIA:
             break
 
-        eventos.append({
-            "paciente": pacientes + 1,
+        pacientes.append({
+            "paciente": paciente_id,
             "estudio": estudio,
-            "cambio": round(t_cambio, 1),
-            "inicio": round(inicio_estudio, 1),
-            "fin": round(fin_estudio, 1)
+            "cambio": round(duracion_cambio, 2),
+            "inicio_estudio": round(inicio_estudio, 2),
+            "fin_estudio": round(fin_estudio, 2)
         })
 
         resonador_libre = fin_estudio
         reloj = inicio_estudio
-        pacientes += 1
+        paciente_id += 1
 
-    return eventos
+    return pacientes
 
-# =========================
-# EJECUCIÓN CONTROLADA
-# =========================
+
+# -----------------------------
+# EJECUCIÓN
+# -----------------------------
+
+def main():
+    pacientes = simular_dia()
+
+    print("\nSIMULACIÓN COMPLETA DEL DÍA")
+    print("-" * 40)
+
+    for p in pacientes:
+        print(
+            f"Paciente {p['paciente']:>3} | "
+            f"Estudio: {p['estudio']:<8} | "
+            f"Cambio: {p['cambio']:>5} min | "
+            f"Inicio: {p['inicio_estudio']:>6} | "
+            f"Fin: {p['fin_estudio']:>6}"
+        )
+
+    print("\n----------------------------------------")
+    print(f"Total de estudios realizados: {len(pacientes)}")
+    print(f"Tiempo total utilizado del resonador: {round(pacientes[-1]['fin_estudio'], 2)} minutos")
+    print("----------------------------------------")
+
+    input("\nPresioná ENTER para cerrar el programa...")
+
 
 if __name__ == "__main__":
-    resultados = simular_dia()
-    for e in resultados:
-        print(e)
-
-    print("\nPacientes atendidos:", len(resultados))
+    main()
