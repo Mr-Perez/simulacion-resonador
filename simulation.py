@@ -1,111 +1,103 @@
 import random
 from datetime import timedelta
 
-# -----------------------------
+# ----------------------------
 # CONFIGURACIÓN GENERAL
-# -----------------------------
-HORA_APERTURA = 8 * 60          # 08:00 en minutos
-HORA_CIERRE = 20 * 60           # 20:00 en minutos
-JORNADA = HORA_CIERRE - HORA_APERTURA
+# ----------------------------
 
-random.seed()
+START_HOUR = 8          # 08:00 AM
+TOTAL_MINUTES = 12 * 60 # 720 minutos
 
-# -----------------------------
-# DISTRIBUCIONES
-# -----------------------------
-def triangular(a, b, c):
-    return round(random.triangular(a, b, c), 2)
-
-# -----------------------------
-# TIPOS DE ESTUDIO
-# -----------------------------
-ESTUDIOS = {
-    "Cerebro": {
-        "prob": 0.25,
-        "scan": (18, 22, 25)
-    },
-    "Columna": {
-        "prob": 0.25,
-        "scan": (20, 25, 30)
-    },
-    "Articulaciones": {
-        "prob": 0.33,
-        "scan": (15, 18, 22)
-    },
-    "Cuerpo completo": {
-        "prob": 0.02,
-        "scan": (35, 40, 45)
-    },
-    "Otros": {
-        "prob": 0.15,
-        "scan": (20, 25, 30)
-    }
+# Tipos de estudio y duración promedio del scan (en minutos)
+STUDY_TYPES = {
+    "Columna": 40,
+    "Cerebro": 30,
+    "Articulaciones": 25
 }
 
-def elegir_estudio():
-    r = random.random()
-    acumulado = 0
-    for estudio, data in ESTUDIOS.items():
-        acumulado += data["prob"]
-        if r <= acumulado:
-            return estudio
-    return "Otros"
+# ----------------------------
+# FUNCIONES AUXILIARES
+# ----------------------------
 
-# -----------------------------
+def minutes_to_clock(minutes):
+    """Convierte minutos desde las 08:00 a hora reloj"""
+    time = timedelta(minutes=minutes)
+    hours = START_HOUR + time.seconds // 3600
+    mins = (time.seconds % 3600) // 60
+    return f"{hours:02d}:{mins:02d}"
+
+def random_validation_time():
+    return random.uniform(3, 7)
+
+def random_changing_time():
+    return random.uniform(5, 12)
+
+def random_exit_time():
+    return random.uniform(2, 5)
+
+def scan_time(study_type):
+    base = STUDY_TYPES[study_type]
+    return random.uniform(base * 0.9, base * 1.1)
+
+# ----------------------------
 # SIMULACIÓN
-# -----------------------------
-def simular_dia():
-    tiempo_actual = 0
-    paciente_id = 1
-    resultados = []
+# ----------------------------
 
-    while tiempo_actual < JORNADA:
-        estudio = elegir_estudio()
+current_time = 0
+patient_id = 1
+results = []
 
-        llegada = triangular(0, 10, 30)
-        validacion = triangular(3, 5, 8)
-        cambiador = triangular(5, 8, 15)
-        scan = triangular(*ESTUDIOS[estudio]["scan"])
-        salida = triangular(2, 3, 6)
+while current_time < TOTAL_MINUTES:
 
-        inicio_servicio = max(tiempo_actual, llegada)
-        fin_servicio = inicio_servicio + validacion + cambiador + scan + salida
+    study = random.choice(list(STUDY_TYPES.keys()))
 
-        if fin_servicio > JORNADA:
-            break
+    arrival_time = current_time
+    validation = random_validation_time()
+    changing = random_changing_time()
+    scan = scan_time(study)
+    exit_time = random_exit_time()
 
-        resultados.append({
-            "Paciente": paciente_id,
-            "Estudio": estudio,
-            "Llegada": llegada,
-            "Horario llegada": HORA_APERTURA + llegada,
-            "Validación": validacion,
-            "Cambiador": cambiador,
-            "Scan": scan,
-            "Salida": salida,
-            "Tiempo total servicio": fin_servicio - llegada
-        })
+    total_service_time = validation + changing + scan + exit_time
 
-        tiempo_actual = fin_servicio
-        paciente_id += 1
+    end_time = arrival_time + total_service_time
 
-    return resultados
+    if end_time > TOTAL_MINUTES:
+        break
 
-# -----------------------------
-# EJECUCIÓN
-# -----------------------------
-print("\nSIMULACIÓN COMPLETA DEL DÍA\n")
+    results.append({
+        "Paciente": patient_id,
+        "Estudio": study,
+        "Llegada_min": round(arrival_time, 2),
+        "Hora_llegada": minutes_to_clock(arrival_time),
+        "Validacion": round(validation, 2),
+        "Cambiador": round(changing, 2),
+        "Scan": round(scan, 2),
+        "Salida": round(exit_time, 2),
+        "Total_servicio": round(total_service_time, 2)
+    })
 
-datos = simular_dia()
+    current_time = end_time
+    patient_id += 1
 
-for d in datos:
+# ----------------------------
+# RESULTADOS
+# ----------------------------
+
+print("\nSIMULACIÓN DIARIA DE RMN (08:00 - 20:00)\n")
+
+for r in results:
     print(
-        f"Paciente {d['Paciente']:>2} | "
-        f"{d['Estudio']:<15} | "
-        f"Llegada: {d['Llegada']:>6} min | "
-        f"Total servicio: {d['Tiempo total servicio']:>6} min"
+        f"Paciente {r['Paciente']:02d} | "
+        f"{r['Estudio']:15} | "
+        f"Llegada: {r['Llegada_min']:6} min | "
+        f"Hora: {r['Hora_llegada']} | "
+        f"Valid: {r['Validacion']:5} | "
+        f"Camb: {r['Cambiador']:5} | "
+        f"Scan: {r['Scan']:5} | "
+        f"Salida: {r['Salida']:4} | "
+        f"Total: {r['Total_servicio']:6}"
     )
 
-print(f"\nTotal de estudios realizados: {len(datos)}")
-
-input("\nPresioná ENTER para cerrar el programa...")
+print("\n------------------------------------")
+print(f"Total de pacientes atendidos: {len(results)}")
+print(f"Hora de cierre del resonador: {minutes_to_clock(current_time)}")
