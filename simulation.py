@@ -101,3 +101,4 @@ for r in results:
 print("\n------------------------------------")
 print(f"Total de pacientes atendidos: {len(results)}")
 print(f"Hora de cierre del resonador: {minutes_to_clock(current_time)}")
+input("\nPresioná ENTER para cerrar el programa...")
