@@ -1,16 +1,19 @@
 import tkinter as tk
-import time
 import threading
+import time
+import random
+import numpy as np
 
 # =========================
 # CONFIGURACIÓN GENERAL
 # =========================
 
-SCALE_TIME = 1  # 1 segundo = 1 minuto
+SCALE_TIME = 1        # 1 segundo = 1 minuto
+DAY_MINUTES = 12 * 60
 PATIENT_RADIUS = 10
 
 # =========================
-# POSICIONES (coordenadas)
+# POSICIONES
 # =========================
 
 POS_WAITING = (100, 150)
@@ -20,6 +23,29 @@ POS_CHANGING = (450, 100)
 POS_BOX = (500, 100)
 POS_RESONATOR = (450, 250)
 POS_EXIT = (100, 250)
+
+# =========================
+# ESTADÍSTICA
+# =========================
+
+STUDIES = [
+    ("Cerebro", 0.25, 25, 4),
+    ("Columna", 0.25, 30, 5),
+    ("Articulaciones", 0.33, 20, 3),
+    ("Cuerpo Completo", 0.02, 28, 4),
+    ("Otros", 0.15, 22, 3),
+]
+
+def truncated_normal(mu, sigma):
+    return max(1, np.random.normal(mu, sigma))
+
+def sample_study():
+    r = random.random()
+    acc = 0
+    for name, p, mu, sigma in STUDIES:
+        acc += p
+        if r <= acc:
+            return name, truncated_normal(mu, sigma)
 
 # =========================
 # CLASE PACIENTE
@@ -40,7 +66,7 @@ class Patient:
         self.text = canvas.create_text(self.x, self.y, text=str(pid), fill="white")
 
     def move_to(self, target, minutes):
-        steps = minutes * 10
+        steps = int(minutes * 10)
         dx = (target[0] - self.x) / steps
         dy = (target[1] - self.y) / steps
 
@@ -53,42 +79,51 @@ class Patient:
         self.x, self.y = target
 
 # =========================
-# SIMULACIÓN
+# SIMULACIÓN PRINCIPAL
 # =========================
 
-def simulate():
-    patient = Patient(canvas, 1)
+resonator_lock = threading.Lock()
+current_time = 0
 
-    # Llegada
+def patient_process(pid):
+    global current_time
+
+    patient = Patient(canvas, pid)
+
+    # Llegada y validación
     patient.move_to(POS_DESK, 1)
+    time.sleep(truncated_normal(5, 1) * SCALE_TIME)
 
-    # Validación
-    time.sleep(3 * SCALE_TIME)
-
-    # Pasillo
+    # Pasillo → Vestidor → Box
     patient.move_to(POS_HALLWAY, 2)
-
-    # Vestidor
     patient.move_to(POS_CHANGING, 2)
+    patient.move_to(POS_BOX, truncated_normal(6, 1.5))
 
-    # Box
-    patient.move_to(POS_BOX, 4)
+    # Espera resonador
+    with resonator_lock:
+        patient.move_to(POS_RESONATOR, 2)
 
-    # Resonador
-    patient.move_to(POS_RESONATOR, 3)
-
-    # Scan
-    time.sleep(20 * SCALE_TIME)
+        study, scan_time = sample_study()
+        time.sleep(scan_time * SCALE_TIME)
 
     # Salida
-    patient.move_to(POS_EXIT, 5)
+    patient.move_to(POS_EXIT, truncated_normal(4, 1))
+
+def simulate_day():
+    pid = 1
+    start_time = time.time()
+
+    while (time.time() - start_time) / SCALE_TIME < DAY_MINUTES:
+        threading.Thread(target=patient_process, args=(pid,), daemon=True).start()
+        pid += 1
+        time.sleep(1 * SCALE_TIME)  # agenda densa
 
 # =========================
 # INTERFAZ
 # =========================
 
 root = tk.Tk()
-root.title("Simulación Resonador - Flujo del Paciente")
+root.title("Simulación Resonador - Estadística + Flujo")
 
 canvas = tk.Canvas(root, width=700, height=400, bg="white")
 canvas.pack()
@@ -122,6 +157,6 @@ canvas.create_rectangle(400, 200, 650, 350, outline="black", width=2)
 canvas.create_text(525, 190, text="Resonador")
 
 # Lanzar simulación
-threading.Thread(target=simulate, daemon=True).start()
+threading.Thread(target=simulate_day, daemon=True).start()
 
 root.mainloop()
