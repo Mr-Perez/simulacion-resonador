@@ -43,3 +43,4 @@ while running:
 pygame.quit()
 sys.exit()
 
+input("\nPresioná ENTER para cerrar el programa...")
