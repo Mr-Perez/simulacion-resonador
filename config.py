@@ -79,27 +79,31 @@ INTERVALO_TURNOS = 30  # minutos entre turnos (se puede modificar)
 # ============================================================================
 # CONFIGURACIÓN DE VISUALIZACIÓN
 # ============================================================================
-VENTANA_ANCHO = 1400
-VENTANA_ALTO = 900
+VENTANA_ANCHO = 1600
+VENTANA_ALTO = 950
 
-# Colores (RGB)
-COLOR_FONDO = (240, 240, 245)
-COLOR_SALA_ESPERA = (200, 220, 240)
-COLOR_MESA = (180, 200, 220)
-COLOR_PASILLO = (220, 220, 220)
-COLOR_CAMBIADOR = (255, 230, 200)
-COLOR_BOX = (255, 200, 200)
-COLOR_RESONADOR = (150, 180, 220)
+# Colores profesionales (RGB)
+COLOR_FONDO = (245, 247, 250)
+COLOR_SALA_ESPERA = (220, 235, 255)
+COLOR_MESA = (200, 220, 240)
+COLOR_PASILLO = (235, 235, 235)
+COLOR_VESTUARIO = (255, 240, 220)
+COLOR_BOX = (255, 220, 220)
+COLOR_SALA_RESONANCIA = (230, 245, 255)
+COLOR_RESONADOR = (100, 150, 220)
 COLOR_PACIENTE = (50, 150, 250)
 COLOR_PACIENTE_ACTIVO = (255, 100, 100)
-COLOR_TEXTO = (50, 50, 50)
+COLOR_TEXTO = (40, 40, 40)
 COLOR_PANEL = (255, 255, 255)
+COLOR_BORDE = (180, 180, 180)
+COLOR_SOMBRA = (200, 200, 200)
 
 # Estados de paciente (para visualización)
 ESTADOS_PACIENTE = {
     'LLEGADA': 'Llegando',
     'ESPERA': 'En sala de espera',
     'VALIDACION': 'En mesa de atención',
+    'CAMINANDO_PASILLO': 'Caminando por pasillo',
     'CAMBIADOR_IN': 'Cambiándose',
     'ESPERANDO_RESONADOR': 'Esperando turno',
     'RESONADOR': 'En resonador',
@@ -109,35 +113,95 @@ ESTADOS_PACIENTE = {
 }
 
 # ============================================================================
-# LAYOUT DE LA CLÍNICA (coordenadas en píxeles)
+# LAYOUT DE LA CLÍNICA - EXACTO SEGÚN CROQUIS DE MIRO
 # ============================================================================
+# Layout basado en el diseño real con líneas rojas (estructura)
 LAYOUT = {
-    'sala_espera': {'x': 50, 'y': 300, 'ancho': 400, 'alto': 450},
-    'mesa_atencion': {'x': 150, 'y': 200, 'ancho': 200, 'alto': 80},
-    'pasillo_vertical': {'x': 470, 'y': 50, 'ancho': 120, 'alto': 700},
-    'pasillo_horizontal': {'x': 590, 'y': 50, 'ancho': 350, 'alto': 120},
-    'cambiador': {'x': 650, 'y': 400, 'ancho': 200, 'alto': 200},
-    'box': {'x': 750, 'y': 230, 'ancho': 100, 'alto': 100},
-    'sala_resonancia': {'x': 650, 'y': 620, 'ancho': 400, 'alto': 250},
-    'resonador': {'x': 750, 'y': 700, 'ancho': 200, 'alto': 100}
+    # Sala de espera (abajo izquierda)
+    'sala_espera': {'x': 40, 'y': 450, 'ancho': 420, 'alto': 400},
+    
+    # Mesa de atención (dentro de sala de espera, arriba)
+    'mesa_atencion': {'x': 100, 'y': 470, 'ancho': 300, 'alto': 100},
+    
+    # Pasillo vertical (centro)
+    'pasillo_vertical': {'x': 480, 'y': 80, 'ancho': 140, 'alto': 770},
+    
+    # Pasillo horizontal superior
+    'pasillo_horizontal': {'x': 480, 'y': 80, 'ancho': 700, 'alto': 140},
+    
+    # Box (arriba derecha, dentro del pasillo horizontal)
+    'box': {'x': 850, 'y': 100, 'ancho': 120, 'alto': 100},
+    
+    # Vestuario (derecha centro)
+    'vestuario': {'x': 640, 'y': 350, 'ancho': 280, 'alto': 220},
+    
+    # Sala de resonancia (derecha abajo)
+    'sala_resonancia': {'x': 640, 'y': 590, 'ancho': 500, 'alto': 260},
+    
+    # Resonador (dentro de sala de resonancia)
+    'resonador': {'x': 740, 'y': 660, 'ancho': 300, 'alto': 120}
 }
 
-# Posiciones de movimiento (waypoints)
+# ============================================================================
+# WAYPOINTS - RUTA EXACTA DEL PACIENTE (flechas azules del croquis)
+# ============================================================================
 WAYPOINTS = {
-    'entrada': (250, 100),
-    'sala_espera': (250, 500),
-    'mesa': (250, 240),
-    'pasillo_inicio': (530, 240),
-    'pasillo_medio': (530, 400),
-    'cambiador': (750, 500),
-    'box': (800, 280),
-    'sala_resonador': (850, 650),
-    'resonador': (850, 750),
-    'salida': (250, 100)
+    # 1. Entrada por sala de espera
+    'entrada': (250, 900),
+    'sala_espera_centro': (250, 650),
+    
+    # 2. Mesa de atención
+    'mesa': (250, 520),
+    
+    # 3. Sale de sala de espera hacia pasillo
+    'salida_sala_espera': (460, 520),
+    
+    # 4. Pasillo vertical - sube
+    'pasillo_bajo': (550, 520),
+    'pasillo_medio': (550, 350),
+    'pasillo_alto': (550, 150),
+    
+    # 5. Pasillo horizontal - va hacia box
+    'pasillo_horizontal_inicio': (700, 150),
+    'pasillo_horizontal_box': (910, 150),
+    
+    # 6. Box (opcional, depende del flujo)
+    'box': (910, 150),
+    
+    # 7. Baja al vestuario
+    'bajada_vestuario': (780, 150),
+    'vestuario_entrada': (780, 460),
+    
+    # 8. Vestuario
+    'vestuario': (780, 460),
+    
+    # 9. Baja a sala de resonancia
+    'bajada_resonancia': (780, 570),
+    'sala_resonancia_entrada': (890, 650),
+    
+    # 10. Resonador
+    'resonador': (890, 720),
+    
+    # 11. Salida (vuelve a vestuario y sale)
+    'vestuario_salida': (780, 460),
+    'salida': (250, 900)
 }
+
+# ============================================================================
+# CONFIGURACIÓN DE MOVIMIENTO SUAVE
+# ============================================================================
+VELOCIDAD_PACIENTE = 100  # Píxeles por segundo (movimiento suave)
+INTERPOLACION_SUAVE = True  # Activar movimiento interpolado
 
 # ============================================================================
 # CONFIGURACIÓN DE SIMULACIÓN
 # ============================================================================
-VELOCIDAD_SIMULACION = 60  # Cuántos minutos simulados por segundo real (ajustable)
+VELOCIDAD_SIMULACION_MIN = 12  # Velocidad mínima: 12 min simulados por segundo (5 seg real = 1 min sim)
+VELOCIDAD_SIMULACION_MAX = 480  # Velocidad máxima: 480 min simulados por segundo
+VELOCIDAD_SIMULACION_DEFAULT = 30  # Velocidad por defecto
 FPS = 60  # Frames por segundo de la visualización
+
+# ============================================================================
+# CONFIGURACIÓN DE RESUMEN FINAL
+# ============================================================================
+MOSTRAR_RESUMEN_FINAL = True  # Mostrar resumen al terminar el día
