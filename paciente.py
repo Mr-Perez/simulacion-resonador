@@ -35,7 +35,13 @@ class Paciente:
         
         # Estado actual
         self.estado = 'LLEGADA'
-        self.posicion = config.WAYPOINTS['entrada']
+        self.posicion = list(config.WAYPOINTS['entrada'])  # Lista para poder modificar
+        self.posicion_objetivo = None  # Hacia dónde se mueve
+        self.esta_moviendo = False  # Si está en movimiento
+        
+        # Ruta de waypoints a seguir
+        self.ruta_actual = []
+        self.waypoint_actual_index = 0
         
         # ====================================================================
         # MÉTRICAS DEL PACIENTE (lo que queremos medir)
@@ -172,6 +178,64 @@ class Paciente:
             'estado': self.estado,
             'completado': self.completado
         }
+    
+    def definir_ruta(self, waypoints):
+        """
+        Define una ruta de waypoints para que el paciente siga
+        
+        Args:
+            waypoints: Lista de nombres de waypoints en config.WAYPOINTS
+        """
+        self.ruta_actual = [config.WAYPOINTS[wp] for wp in waypoints]
+        self.waypoint_actual_index = 0
+        if self.ruta_actual:
+            self.posicion_objetivo = self.ruta_actual[0]
+            self.esta_moviendo = True
+    
+    def actualizar_movimiento(self, delta_tiempo):
+        """
+        Actualiza la posición del paciente moviéndolo suavemente hacia su objetivo
+        
+        Args:
+            delta_tiempo: Tiempo transcurrido en segundos (tiempo real, no simulado)
+        
+        Returns:
+            True si llegó al waypoint objetivo, False si aún se está moviendo
+        """
+        if not self.esta_moviendo or self.posicion_objetivo is None:
+            return False
+        
+        # Calcular dirección y distancia
+        dx = self.posicion_objetivo[0] - self.posicion[0]
+        dy = self.posicion_objetivo[1] - self.posicion[1]
+        distancia = (dx**2 + dy**2)**0.5
+        
+        # Si ya llegó al waypoint
+        if distancia < 5:  # Threshold de 5 píxeles
+            self.posicion = list(self.posicion_objetivo)
+            
+            # Avanzar al siguiente waypoint
+            self.waypoint_actual_index += 1
+            if self.waypoint_actual_index < len(self.ruta_actual):
+                self.posicion_objetivo = self.ruta_actual[self.waypoint_actual_index]
+            else:
+                # Terminó la ruta
+                self.esta_moviendo = False
+                self.posicion_objetivo = None
+                return True
+            
+            return False
+        
+        # Moverse hacia el objetivo
+        velocidad = config.VELOCIDAD_PACIENTE  # píxeles por segundo
+        paso = velocidad * delta_tiempo
+        
+        # Normalizar y aplicar velocidad
+        factor = paso / distancia
+        self.posicion[0] += dx * factor
+        self.posicion[1] += dy * factor
+        
+        return False
     
     def __repr__(self):
         return f"Paciente #{self.id} - {self.tipo_estudio} - Estado: {self.estado}"
