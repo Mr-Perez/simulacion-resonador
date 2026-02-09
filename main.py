@@ -1,43 +1,36 @@
 """
-SIMULADOR DE RESONADOR - CLÍNICA
-=================================
-Programa principal de la simulación
-
-Autor: Sistema de Simulación
-Fecha: 2026
+SIMULADOR DE RESONADOR V2.1 - CONTROL MANUAL
+=============================================
+Versión corregida con flujo correcto y control manual
 """
 
 from simulacion import SimuladorResonador
 from visualizacion import Visualizador
-import config
 
 def main():
-    """Función principal del programa"""
-    
-    print("=" * 60)
-    print("SIMULADOR DE RESONADOR - CLÍNICA")
-    print("=" * 60)
+    print("=" * 70)
+    print("SIMULADOR DE RESONADOR V2.1 - CONTROL MANUAL")
+    print("=" * 70)
     print()
-    
-    # Crear el simulador
-    print("📊 Inicializando simulador...")
-    simulador = SimuladorResonador()
-    
-    # Generar turnos del día
-    print("📅 Generando turnos del día...")
-    simulador.generar_turnos()
-    
-    # Crear y ejecutar la visualización
-    print("🎨 Iniciando visualización...")
+    print("NOVEDADES V2.1:")
+    print("  ✓ Control MANUAL: Presiona ENTER para cada paciente")
+    print("  ✓ Flujo CORRECTO: Sala → Mesa → Pasillo → Vestuario → Box → Resonador")
+    print("  ✓ Layout CORREGIDO: Box dentro del vestuario")
+    print("  ✓ Métricas SIEMPRE visibles")
+    print("  ✓ Resolución: 1280x960")
     print()
     print("CONTROLES:")
+    print("  - ENTER: Iniciar siguiente paciente")
     print("  - ESPACIO: Pausar/Reanudar")
-    print("  - ↑ ↓: Ajustar velocidad de simulación")
-    print("  - R: Reiniciar simulación")
+    print("  - ↑ ↓: Ajustar velocidad")
+    print("  - R: Reiniciar")
     print("  - ESC: Salir")
     print()
-    print("=" * 60)
+    print("=" * 70)
+    print()
+    print("Iniciando simulación...")
     
+    simulador = SimuladorResonador()
     visualizador = Visualizador(simulador)
     visualizador.ejecutar()
 
