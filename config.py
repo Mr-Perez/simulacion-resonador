@@ -1,7 +1,7 @@
 """
-CONFIGURACIÓN DE LA SIMULACIÓN - RESONADOR MRI
-==============================================
-Todos los parámetros estadísticos y configuraciones del sistema
+CONFIGURACIÓN DE LA SIMULACIÓN - RESONADOR MRI V2.1
+====================================================
+VERSIÓN CORREGIDA - Control manual y flujo correcto
 """
 
 # ============================================================================
@@ -48,16 +48,10 @@ VALIDACION_MESA = {
     'desviacion': 1.0  # σ = 1 minuto
 }
 
-# Tiempo en cambiador (entrada)
-CAMBIADOR_ENTRADA = {
+# Tiempo en box (cambiador)
+BOX_CAMBIO = {
     'media': 6.0,      # μ = 6 minutos
     'desviacion': 1.5  # σ = 1.5 minutos
-}
-
-# Tiempo en cambiador (salida)
-CAMBIADOR_SALIDA = {
-    'media': 4.0,      # μ = 4 minutos
-    'desviacion': 1.0  # σ = 1 minuto
 }
 
 # Tiempo de posicionamiento del paciente en el resonador
@@ -66,29 +60,29 @@ POSICIONAMIENTO = {
     'desviacion': 0.5  # σ = 0.5 minutos
 }
 
-# Margen de error/limpieza entre pacientes
-MARGEN_ERROR = 2.0  # minutos fijos
-
 # ============================================================================
 # CONFIGURACIÓN DE TURNOS
 # ============================================================================
 HORA_INICIO = 8  # 8:00 AM
 HORA_FIN = 18    # 6:00 PM
-INTERVALO_TURNOS = 30  # minutos entre turnos (se puede modificar)
+INTERVALO_TURNOS = 30  # minutos entre turnos
+
+# MODO DE CONTROL
+MODO_MANUAL = True  # Control manual con ENTER
 
 # ============================================================================
-# CONFIGURACIÓN DE VISUALIZACIÓN
+# CONFIGURACIÓN DE VISUALIZACIÓN - 1280x960
 # ============================================================================
-VENTANA_ANCHO = 1600
-VENTANA_ALTO = 950
+VENTANA_ANCHO = 1280
+VENTANA_ALTO = 960
 
-# Colores profesionales (RGB)
+# Colores profesionales
 COLOR_FONDO = (245, 247, 250)
 COLOR_SALA_ESPERA = (220, 235, 255)
 COLOR_MESA = (200, 220, 240)
 COLOR_PASILLO = (235, 235, 235)
 COLOR_VESTUARIO = (255, 240, 220)
-COLOR_BOX = (255, 220, 220)
+COLOR_BOX = (255, 200, 200)
 COLOR_SALA_RESONANCIA = (230, 245, 255)
 COLOR_RESONADOR = (100, 150, 220)
 COLOR_PACIENTE = (50, 150, 250)
@@ -98,110 +92,75 @@ COLOR_PANEL = (255, 255, 255)
 COLOR_BORDE = (180, 180, 180)
 COLOR_SOMBRA = (200, 200, 200)
 
-# Estados de paciente (para visualización)
+# Estados de paciente
 ESTADOS_PACIENTE = {
+    'ESPERANDO': 'Esperando inicio',
     'LLEGADA': 'Llegando',
     'ESPERA': 'En sala de espera',
     'VALIDACION': 'En mesa de atención',
-    'CAMINANDO_PASILLO': 'Caminando por pasillo',
-    'CAMBIADOR_IN': 'Cambiándose',
-    'ESPERANDO_RESONADOR': 'Esperando turno',
+    'CAMINANDO_PASILLO': 'Caminando',
+    'VESTUARIO': 'En vestuario',
+    'BOX': 'En box',
     'RESONADOR': 'En resonador',
-    'CAMBIADOR_OUT': 'Vistiéndose',
     'SALIDA': 'Saliendo',
     'COMPLETADO': 'Completado'
 }
 
 # ============================================================================
-# LAYOUT DE LA CLÍNICA - EXACTO SEGÚN CROQUIS DE MIRO
+# LAYOUT - EXACTO SEGÚN TU IMAGEN 3
 # ============================================================================
-# Layout basado en el diseño real con líneas rojas (estructura)
 LAYOUT = {
     # Sala de espera (abajo izquierda)
-    'sala_espera': {'x': 40, 'y': 450, 'ancho': 420, 'alto': 400},
+    'sala_espera': {'x': 30, 'y': 500, 'ancho': 240, 'alto': 390},
     
-    # Mesa de atención (dentro de sala de espera, arriba)
-    'mesa_atencion': {'x': 100, 'y': 470, 'ancho': 300, 'alto': 100},
+    # Mesa (dentro de sala de espera)
+    'mesa_atencion': {'x': 50, 'y': 520, 'ancho': 200, 'alto': 70},
     
-    # Pasillo vertical (centro)
-    'pasillo_vertical': {'x': 480, 'y': 80, 'ancho': 140, 'alto': 770},
+    # Pasillo vertical
+    'pasillo_vertical': {'x': 290, 'y': 250, 'ancho': 170, 'alto': 640},
     
-    # Pasillo horizontal superior
-    'pasillo_horizontal': {'x': 480, 'y': 80, 'ancho': 700, 'alto': 140},
+    # Pasillo horizontal
+    'pasillo_horizontal': {'x': 30, 'y': 250, 'ancho': 900, 'alto': 130},
     
-    # Box (arriba derecha, dentro del pasillo horizontal)
-    'box': {'x': 850, 'y': 100, 'ancho': 120, 'alto': 100},
+    # Vestuario (GRANDE, contiene el box)
+    'vestuario': {'x': 480, 'y': 400, 'ancho': 450, 'alto': 230},
     
-    # Vestuario (derecha centro)
-    'vestuario': {'x': 640, 'y': 350, 'ancho': 280, 'alto': 220},
+    # Box (DENTRO del vestuario)
+    'box': {'x': 780, 'y': 420, 'ancho': 130, 'alto': 90},
     
-    # Sala de resonancia (derecha abajo)
-    'sala_resonancia': {'x': 640, 'y': 590, 'ancho': 500, 'alto': 260},
+    # Sala de resonancia
+    'sala_resonancia': {'x': 480, 'y': 650, 'ancho': 450, 'alto': 240},
     
-    # Resonador (dentro de sala de resonancia)
-    'resonador': {'x': 740, 'y': 660, 'ancho': 300, 'alto': 120}
+    # Resonador
+    'resonador': {'x': 580, 'y': 730, 'ancho': 250, 'alto': 120}
 }
 
 # ============================================================================
-# WAYPOINTS - RUTA EXACTA DEL PACIENTE (flechas azules del croquis)
+# WAYPOINTS - FLUJO CORRECTO
+# Sala espera → Mesa → Pasillo → Vestuario → Box → Resonador
 # ============================================================================
 WAYPOINTS = {
-    # 1. Entrada por sala de espera
-    'entrada': (250, 900),
-    'sala_espera_centro': (250, 650),
-    
-    # 2. Mesa de atención
-    'mesa': (250, 520),
-    
-    # 3. Sale de sala de espera hacia pasillo
-    'salida_sala_espera': (460, 520),
-    
-    # 4. Pasillo vertical - sube
-    'pasillo_bajo': (550, 520),
-    'pasillo_medio': (550, 350),
-    'pasillo_alto': (550, 150),
-    
-    # 5. Pasillo horizontal - va hacia box
-    'pasillo_horizontal_inicio': (700, 150),
-    'pasillo_horizontal_box': (910, 150),
-    
-    # 6. Box (opcional, depende del flujo)
-    'box': (910, 150),
-    
-    # 7. Baja al vestuario
-    'bajada_vestuario': (780, 150),
-    'vestuario_entrada': (780, 460),
-    
-    # 8. Vestuario
-    'vestuario': (780, 460),
-    
-    # 9. Baja a sala de resonancia
-    'bajada_resonancia': (780, 570),
-    'sala_resonancia_entrada': (890, 650),
-    
-    # 10. Resonador
-    'resonador': (890, 720),
-    
-    # 11. Salida (vuelve a vestuario y sale)
-    'vestuario_salida': (780, 460),
-    'salida': (250, 900)
+    'esperando': (150, 950),
+    'entrada': (150, 920),
+    'sala_espera': (150, 700),
+    'mesa': (150, 555),
+    'salida_sala': (270, 555),
+    'pasillo_v': (375, 555),
+    'pasillo_v_arriba': (375, 315),
+    'pasillo_h': (600, 315),
+    'pasillo_h_derecha': (800, 315),
+    'entrada_vestuario': (705, 380),
+    'vestuario': (705, 515),
+    'box': (845, 465),
+    'vuelta_vestuario': (705, 515),
+    'entrada_resonancia': (705, 630),
+    'resonancia': (705, 790),
+    'resonador': (705, 790),
+    'salida': (150, 950)
 }
 
-# ============================================================================
-# CONFIGURACIÓN DE MOVIMIENTO SUAVE
-# ============================================================================
-VELOCIDAD_PACIENTE = 100  # Píxeles por segundo (movimiento suave)
-INTERPOLACION_SUAVE = True  # Activar movimiento interpolado
-
-# ============================================================================
-# CONFIGURACIÓN DE SIMULACIÓN
-# ============================================================================
-VELOCIDAD_SIMULACION_MIN = 12  # Velocidad mínima: 12 min simulados por segundo (5 seg real = 1 min sim)
-VELOCIDAD_SIMULACION_MAX = 480  # Velocidad máxima: 480 min simulados por segundo
-VELOCIDAD_SIMULACION_DEFAULT = 30  # Velocidad por defecto
-FPS = 60  # Frames por segundo de la visualización
-
-# ============================================================================
-# CONFIGURACIÓN DE RESUMEN FINAL
-# ============================================================================
-MOSTRAR_RESUMEN_FINAL = True  # Mostrar resumen al terminar el día
+# Velocidad
+VELOCIDAD_PACIENTE = 120
+VELOCIDAD_SIMULACION_DEFAULT = 30
+FPS = 60
+MOSTRAR_RESUMEN_FINAL = True
