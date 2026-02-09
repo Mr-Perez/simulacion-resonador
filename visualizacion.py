@@ -146,6 +146,11 @@ class Visualizador:
             self.pantalla.blit(t, (px+15, y))
             y += 25
             
+            # Tiempo en box (cambiador)
+            t = self.fuente_pequena.render(f"Tiempo en box: {p.tiempo_box:.1f} min", True, config.COLOR_TEXTO)
+            self.pantalla.blit(t, (px+15, y))
+            y += 25
+            
             # Tipo de estudio
             t = self.fuente_pequena.render("Tipo de estudio:", True, config.COLOR_TEXTO)
             self.pantalla.blit(t, (px+15, y))
@@ -159,9 +164,17 @@ class Visualizador:
             self.pantalla.blit(t, (px+15, y))
             y += 25
             
-            # Tiempo en circuito
+            # Tiempo de salida (vestuario)
+            t = self.fuente_pequena.render(f"Tiempo salida: {p.tiempo_salida:.1f} min", True, config.COLOR_TEXTO)
+            self.pantalla.blit(t, (px+15, y))
+            y += 25
+            
+            # Tiempo en circuito (calculado correctamente)
             if p.ts_inicio:
-                tiempo_circuito = (self.sim.datetime_actual - p.ts_inicio).total_seconds() / 60
+                # Usar el tiempo simulado, no el datetime real
+                tiempo_circuito = self.sim.tiempo_actual - (p.turno + p.desvio_llegada)
+                if tiempo_circuito < 0:
+                    tiempo_circuito = 0
                 t = self.fuente_pequena.render("Tiempo en circuito:", True, config.COLOR_TEXTO)
                 self.pantalla.blit(t, (px+15, y))
                 y += 22
