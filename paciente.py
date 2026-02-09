@@ -31,6 +31,9 @@ class Paciente:
             config.POSICIONAMIENTO['media'], config.POSICIONAMIENTO['desviacion']))
         self.tiempo_total_resonador = self.tiempo_scan + self.tiempo_posicionamiento
         
+        # Tiempo de salida (vestuario)
+        self.tiempo_salida = max(2, np.random.normal(4.0, 1.0))
+        
         # Timestamps
         self.ts_inicio = None
         self.ts_fin = None
