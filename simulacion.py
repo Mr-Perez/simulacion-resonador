@@ -35,7 +35,14 @@ class SimuladorResonador:
         p.estado = 'LLEGADA'
         p.definir_ruta(['esperando', 'entrada', 'sala_espera'])
     
-    def actualizar(self, delta_sim, delta_real):
+    def actualizar(self, delta_sim, delta_real, multiplicador_velocidad=1.0):
+        """Actualiza la simulación
+        
+        Args:
+            delta_sim: Tiempo simulado en minutos
+            delta_real: Tiempo real en segundos
+            multiplicador_velocidad: Multiplicador para velocidad de movimiento visual
+        """
         if self.pausada or self.finalizada or self.esperando_input:
             return
         
@@ -43,8 +50,8 @@ class SimuladorResonador:
         self.datetime_actual = self.fecha_inicio + timedelta(minutes=self.tiempo_actual)
         
         if self.paciente_actual:
-            # Actualizar movimiento
-            self.paciente_actual.actualizar_movimiento(delta_real)
+            # Actualizar movimiento con multiplicador de velocidad
+            self.paciente_actual.actualizar_movimiento(delta_real, multiplicador_velocidad)
             
             # Actualizar tiempo en etapa
             self.paciente_actual.tiempo_en_etapa += delta_sim
