@@ -59,7 +59,48 @@ class Paciente:
         if self.ruta:
             self.moviendo = True
     
-    def actualizar_movimiento(self, dt):
+    def calcular_tiempo_circuito(self):
+        """Calcula el tiempo total en el circuito sumando todas las etapas"""
+        # SUMA SIMPLE de todos los tiempos (no depende del estado)
+        tiempo_total = (
+            abs(self.desvio_llegada) +  # Llegada (en valor absoluto)
+            self.tiempo_validacion +     # Mesa de atención
+            2.0 +                         # Tiempo caminando al vestuario
+            self.tiempo_box +             # Box (cambiarse)
+            self.tiempo_total_resonador + # Resonador (posicionamiento + scan)
+            2.0 +                         # Tiempo saliendo
+            self.tiempo_salida            # Vestuario salida
+        )
+        return tiempo_total
+    
+    def actualizar_movimiento(self, dt, multiplicador_velocidad=1.0):
+        """Actualiza el movimiento del paciente
+        
+        Args:
+            dt: Delta tiempo en segundos
+            multiplicador_velocidad: Multiplicador de velocidad (1.0 normal, 2.0 rápido)
+        """
+        if not self.moviendo or not self.ruta: return False
+        objetivo = self.ruta[self.idx_ruta]
+        dx = objetivo[0] - self.posicion[0]
+        dy = objetivo[1] - self.posicion[1]
+        dist = (dx**2 + dy**2)**0.5
+        
+        if dist < 5:
+            self.posicion = list(objetivo)
+            self.idx_ruta += 1
+            if self.idx_ruta >= len(self.ruta):
+                self.moviendo = False
+                return True
+            return False
+        
+        # Aplicar multiplicador de velocidad
+        vel = config.VELOCIDAD_PACIENTE * multiplicador_velocidad * dt
+        factor = vel / dist
+        self.posicion[0] += dx * factor
+        self.posicion[1] += dy * factor
+        return False
+
         if not self.moviendo or not self.ruta: return False
         objetivo = self.ruta[self.idx_ruta]
         dx = objetivo[0] - self.posicion[0]
