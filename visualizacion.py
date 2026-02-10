@@ -14,7 +14,10 @@ class Visualizador:
         self.fuente_pequena = pygame.font.Font(None, 18)
         self.fuente_titulo = pygame.font.Font(None, 28)
         self.ejecutando = True
-        self.velocidad = config.VELOCIDAD_SIMULACION_DEFAULT
+        self.velocidad_normal = config.VELOCIDAD_SIMULACION_DEFAULT
+        self.velocidad_rapida = self.velocidad_normal * 2
+        self.velocidad = self.velocidad_normal
+        self.modo_rapido = False
         self.mostrar_resumen = False
     
     def ejecutar(self):
@@ -24,7 +27,9 @@ class Visualizador:
             
             if not self.sim.pausada and not self.sim.finalizada:
                 dt_sim = self.velocidad / config.FPS
-                self.sim.actualizar(dt_sim, dt_real)
+                # Pasar multiplicador de velocidad (2.0 si modo rápido, 1.0 normal)
+                mult_vel = 2.0 if self.modo_rapido else 1.0
+                self.sim.actualizar(dt_sim, dt_real, mult_vel)
             
             if self.mostrar_resumen:
                 self._dibujar_resumen()
@@ -46,10 +51,12 @@ class Visualizador:
                         self.mostrar_resumen = False
                 elif ev.key == pygame.K_SPACE:
                     self.sim.pausar() if not self.sim.pausada else self.sim.reanudar()
-                elif ev.key == pygame.K_UP:
-                    self.velocidad = min(self.velocidad * 1.5, 480)
-                elif ev.key == pygame.K_DOWN:
-                    self.velocidad = max(self.velocidad / 1.5, 12)
+                elif ev.key == pygame.K_v:  # V: Cambiar velocidad
+                    self.modo_rapido = not self.modo_rapido
+                    self.velocidad = self.velocidad_rapida if self.modo_rapido else self.velocidad_normal
+                elif ev.key == pygame.K_s:  # S: Mostrar resumen
+                    if len(self.sim.pacientes_completados) > 0:
+                        self.mostrar_resumen = True
                 elif ev.key == pygame.K_r:
                     self.sim.reiniciar()
                     self.mostrar_resumen = False
@@ -169,18 +176,14 @@ class Visualizador:
             self.pantalla.blit(t, (px+15, y))
             y += 25
             
-            # Tiempo en circuito (calculado correctamente)
-            if p.ts_inicio:
-                # Usar el tiempo simulado, no el datetime real
-                tiempo_circuito = self.sim.tiempo_actual - (p.turno + p.desvio_llegada)
-                if tiempo_circuito < 0:
-                    tiempo_circuito = 0
-                t = self.fuente_pequena.render("Tiempo en circuito:", True, config.COLOR_TEXTO)
-                self.pantalla.blit(t, (px+15, y))
-                y += 22
-                t = self.fuente.render(f"{tiempo_circuito:.1f} min", True, (0, 150, 0))
-                self.pantalla.blit(t, (px+15, y))
-                y += 35
+            # Tiempo en circuito (SUMA de todas las etapas)
+            tiempo_circuito = p.calcular_tiempo_circuito()
+            t = self.fuente_pequena.render("Tiempo en circuito:", True, config.COLOR_TEXTO)
+            self.pantalla.blit(t, (px+15, y))
+            y += 22
+            t = self.fuente.render(f"{tiempo_circuito:.1f} min", True, (0, 150, 0))
+            self.pantalla.blit(t, (px+15, y))
+            y += 35
             
             # Estado actual
             t = self.fuente_pequena.render("Estado actual:", True, config.COLOR_TEXTO)
@@ -211,10 +214,13 @@ class Visualizador:
             t = self.fuente.render("▶ EJECUTANDO", True, (0, 200, 0))
         self.pantalla.blit(t, (15, y))
         
-        t = self.fuente_pequena.render(f"Velocidad: {self.velocidad:.0f}x", True, config.COLOR_TEXTO)
+        # Mostrar velocidad actual
+        vel_texto = "Velocidad: 2x 🚀" if self.modo_rapido else "Velocidad: Normal"
+        t = self.fuente_pequena.render(vel_texto, True, config.COLOR_TEXTO)
         self.pantalla.blit(t, (15, y+25))
         
-        controles = "ENTER: Siguiente | ESPACIO: Pausa | ↑↓: Velocidad | R: Reiniciar | ESC: Salir"
+        # Controles actualizados
+        controles = "ENTER: Siguiente | ESPACIO: Pausa | V: Velocidad | S: Resumen | R: Reiniciar | ESC: Salir"
         t = self.fuente_pequena.render(controles, True, config.COLOR_TEXTO)
         self.pantalla.blit(t, (200, y+25))
     
