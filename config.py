@@ -113,8 +113,8 @@ LAYOUT = {
     # Sala de espera (abajo izquierda)
     'sala_espera': {'x': 30, 'y': 500, 'ancho': 240, 'alto': 390},
     
-    # Mesa (dentro de sala de espera)
-    'mesa_atencion': {'x': 50, 'y': 520, 'ancho': 200, 'alto': 70},
+    # Mesa (dentro de sala de espera, MÁS ABAJO para no estar pegada al texto)
+    'mesa_atencion': {'x': 50, 'y': 560, 'ancho': 200, 'alto': 70},
     
     # Pasillo vertical
     'pasillo_vertical': {'x': 290, 'y': 250, 'ancho': 170, 'alto': 640},
@@ -143,9 +143,9 @@ WAYPOINTS = {
     'esperando': (150, 950),
     'entrada': (150, 920),
     'sala_espera': (150, 700),
-    'mesa': (150, 555),
-    'salida_sala': (270, 555),
-    'pasillo_v': (375, 555),
+    'mesa': (150, 595),  # Ajustado para nueva posición de mesa
+    'salida_sala': (270, 595),
+    'pasillo_v': (375, 595),
     'pasillo_v_arriba': (375, 315),
     'pasillo_h': (600, 315),
     'pasillo_h_derecha': (800, 315),
