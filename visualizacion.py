@@ -19,6 +19,7 @@ class Visualizador:
         self.velocidad = self.velocidad_normal
         self.modo_rapido = False
         self.mostrar_resumen = False
+        self.pacientes_dia_completo = []  # Para almacenar simulación completa del día
     
     def ejecutar(self):
         while self.ejecutando:
@@ -54,12 +55,14 @@ class Visualizador:
                 elif ev.key == pygame.K_v:  # V: Cambiar velocidad
                     self.modo_rapido = not self.modo_rapido
                     self.velocidad = self.velocidad_rapida if self.modo_rapido else self.velocidad_normal
-                elif ev.key == pygame.K_s:  # S: Mostrar resumen
-                    if len(self.sim.pacientes_completados) > 0:
-                        self.mostrar_resumen = True
+                elif ev.key == pygame.K_s:  # S: Simular y mostrar resumen del día
+                    # Simular día completo
+                    self.pacientes_dia_completo = self.sim.simular_dia_completo()
+                    self.mostrar_resumen = True
                 elif ev.key == pygame.K_r:
                     self.sim.reiniciar()
                     self.mostrar_resumen = False
+                    self.pacientes_dia_completo = []  # Limpiar simulación del día
                 elif ev.key == pygame.K_ESCAPE:
                     self.ejecutando = False
     
@@ -237,17 +240,26 @@ class Visualizador:
         pygame.draw.rect(self.pantalla, (255, 255, 255), (px, py, pw, ph), 0, 15)
         pygame.draw.rect(self.pantalla, (60, 90, 140), (px, py, pw, 60), 0, 15)
         
-        t = self.fuente_titulo.render("RESUMEN DEL DÍA", True, (255, 255, 255))
+        t = self.fuente_titulo.render("RESUMEN DEL DÍA COMPLETO", True, (255, 255, 255))
         r = t.get_rect(center=(px+pw//2, py+30))
         self.pantalla.blit(t, r)
         
         y = py + 100
-        stats = self.sim.obtener_estadisticas_dia()
         
-        t = self.fuente.render(f"Total de pacientes: {len(self.sim.pacientes_completados)}", True, config.COLOR_TEXTO)
+        # Obtener estadísticas de la simulación completa del día
+        stats = self.sim.obtener_estadisticas_dia(self.pacientes_dia_completo)
+        
+        # Total de pacientes
+        t = self.fuente.render(f"Total de pacientes: {stats['total_pacientes']}", True, config.COLOR_TEXTO)
         self.pantalla.blit(t, (px+50, y))
         y += 40
         
+        # Jornada laboral
+        t = self.fuente_pequena.render("Jornada: 08:00 - 20:00 (720 minutos)", True, (100, 100, 100))
+        self.pantalla.blit(t, (px+50, y))
+        y += 35
+        
+        # Estudios realizados
         t = self.fuente.render("Estudios realizados:", True, (60, 90, 140))
         self.pantalla.blit(t, (px+50, y))
         y += 35
@@ -258,8 +270,16 @@ class Visualizador:
             y += 28
         
         y += 30
-        t = self.fuente.render(f"Tiempo promedio: {stats['tiempo_promedio_total']:.1f} min", True, config.COLOR_TEXTO)
+        
+        # Tiempo promedio
+        t = self.fuente.render(f"Tiempo promedio por paciente: {stats['tiempo_promedio_total']:.1f} min", True, config.COLOR_TEXTO)
         self.pantalla.blit(t, (px+50, y))
+        y += 40
+        
+        # Pacientes procesados manualmente (si hay)
+        if self.sim.pacientes_completados:
+            t = self.fuente_pequena.render(f"(Procesados manualmente: {len(self.sim.pacientes_completados)})", True, (100, 100, 100))
+            self.pantalla.blit(t, (px+50, y))
         
         y = py + ph - 50
         t = self.fuente_pequena.render("Presiona ENTER para continuar o R para reiniciar", True, (100, 100, 100))
