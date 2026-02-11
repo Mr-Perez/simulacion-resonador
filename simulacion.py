@@ -107,19 +107,73 @@ class SimuladorResonador:
             self.paciente_actual = None
             self.esperando_input = True  # Espera siguiente ENTER
     
-    def obtener_estadisticas_dia(self):
-        if not self.pacientes_completados:
-            return {'estudios_por_tipo': {}, 'tiempo_promedio_total': 0}
+    def simular_dia_completo(self):
+        """Simula un día completo de trabajo (08:00-20:00, 720 minutos)
+        
+        Genera pacientes siguiendo la lógica de grilla flexible:
+        - Primer paciente en minuto 0
+        - Siguientes pacientes: turno = turno_anterior + tiempo_total_anterior
+        - Hasta llegar cerca de 720 minutos
+        """
+        from paciente import Paciente
+        import random
+        
+        pacientes_simulados = []
+        turno_actual = 0.0  # Primer paciente en minuto 0
+        numero_paciente = 1
+        
+        # Generar pacientes hasta llenar la jornada (720 min = 12 horas)
+        while turno_actual < 720:
+            # Crear paciente
+            p = Paciente(turno_actual, self.fecha_inicio)
+            p.id = numero_paciente
+            
+            # Calcular tiempo total de servicio
+            # IMPORTANTE: No incluir el desvío de llegada en el tiempo de servicio
+            # Solo los tiempos de procesos
+            tiempo_servicio = (
+                p.tiempo_validacion +
+                2.0 +  # Tiempo caminando al vestuario
+                p.tiempo_box +
+                p.tiempo_total_resonador +
+                2.0 +  # Tiempo saliendo
+                p.tiempo_salida
+            )
+            
+            p.tiempo_total = tiempo_servicio
+            p.estado = 'COMPLETADO'
+            pacientes_simulados.append(p)
+            
+            # Siguiente paciente empieza donde terminó este
+            turno_actual += tiempo_servicio
+            numero_paciente += 1
+        
+        return pacientes_simulados
+    
+    def obtener_estadisticas_dia(self, pacientes=None):
+        """Obtiene estadísticas del día
+        
+        Args:
+            pacientes: Lista de pacientes a analizar. Si es None, usa pacientes_completados
+        """
+        if pacientes is None:
+            pacientes = self.pacientes_completados
+        
+        if not pacientes:
+            return {'estudios_por_tipo': {}, 'tiempo_promedio_total': 0, 'total_pacientes': 0}
         
         estudios = {}
         tiempos = []
-        for p in self.pacientes_completados:
+        for p in pacientes:
             estudios[p.tipo_estudio] = estudios.get(p.tipo_estudio, 0) + 1
-            tiempos.append(p.tiempo_total)
+            # Usar calcular_tiempo_circuito() para tiempo real
+            tiempo = p.calcular_tiempo_circuito()
+            tiempos.append(tiempo)
         
         return {
             'estudios_por_tipo': estudios,
-            'tiempo_promedio_total': sum(tiempos) / len(tiempos) if tiempos else 0
+            'tiempo_promedio_total': sum(tiempos) / len(tiempos) if tiempos else 0,
+            'total_pacientes': len(pacientes)
         }
     
     def pausar(self):
