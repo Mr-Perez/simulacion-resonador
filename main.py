@@ -1,7 +1,7 @@
 """
-SIMULADOR DE RESONADOR V2.1 - CONTROL MANUAL
-=============================================
-Versión corregida con flujo correcto y control manual
+SIMULADOR DE RESONADOR V3.0 - GRILLA FLEXIBLE
+==============================================
+Sistema automático con llegadas realistas
 """
 
 from simulacion import SimuladorResonador
@@ -9,26 +9,31 @@ from visualizacion import Visualizador
 
 def main():
     print("=" * 70)
-    print("SIMULADOR DE RESONADOR V2.1 - CONTROL MANUAL")
+    print("SIMULADOR DE RESONADOR V3.0 - GRILLA FLEXIBLE")
     print("=" * 70)
     print()
-    print("NOVEDADES V2.1:")
-    print("  ✓ Control MANUAL: Presiona ENTER para cada paciente")
-    print("  ✓ Flujo CORRECTO: Sala → Mesa → Pasillo → Vestuario → Box → Resonador")
-    print("  ✓ Layout CORREGIDO: Box dentro del vestuario")
-    print("  ✓ Métricas SIEMPRE visibles")
-    print("  ✓ Resolución: 1280x960")
+    print("CARACTERÍSTICAS V3.0:")
+    print("  ✓ GRILLA FLEXIBLE: Turnos cuando termina el anterior")
+    print("  ✓ LLEGADAS REALISTAS: Escalonadas según probabilidades")
+    print("  ✓ SIMULACIÓN AUTOMÁTICA: Sin ENTER, corre sola")
+    print("  ✓ Core: Anticipa tiempo para dar turnos precisos")
+    print()
+    print("PROBABILIDADES:")
+    print("  • Llegada temprano (-5 min): 20%")
+    print("  • Llegada puntual (0 min): 30%")
+    print("  • Llegada tarde (5-10 min): 50%")
     print()
     print("CONTROLES:")
-    print("  - ENTER: Iniciar siguiente paciente")
     print("  - ESPACIO: Pausar/Reanudar")
-    print("  - ↑ ↓: Ajustar velocidad")
+    print("  - V: Velocidad x2")
+    print("  - S: Ver resumen")
     print("  - R: Reiniciar")
     print("  - ESC: Salir")
     print()
     print("=" * 70)
     print()
-    print("Iniciando simulación...")
+    print("Iniciando simulación automática...")
+    print()
     
     simulador = SimuladorResonador()
     visualizador = Visualizador(simulador)
