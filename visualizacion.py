@@ -1,4 +1,4 @@
-"""Visualización V3.0 - AUTOMÁTICA con grilla flexible"""
+"""Visualización V3.0 - MODO AUTOMÁTICO"""
 import pygame
 import sys
 import config
@@ -25,12 +25,13 @@ class Visualizador:
             dt_real = self.reloj.tick(config.FPS) / 1000.0
             self._procesar_eventos()
             
+            # Simulación corre automáticamente
             if not self.sim.pausada and not self.sim.finalizada:
                 dt_sim = self.velocidad / config.FPS
                 mult_vel = 2.0 if self.modo_rapido else 1.0
                 self.sim.actualizar(dt_sim, dt_real, mult_vel)
             
-            # Mostrar resumen automáticamente al finalizar
+            # Si terminó, mostrar resumen automáticamente
             if self.sim.finalizada and not self.mostrar_resumen:
                 self.mostrar_resumen = True
             
@@ -38,7 +39,7 @@ class Visualizador:
                 self._dibujar_resumen()
             else:
                 self._dibujar()
-            
+        
         pygame.quit()
         sys.exit()
     
@@ -55,9 +56,6 @@ class Visualizador:
                 elif ev.key == pygame.K_v:
                     self.modo_rapido = not self.modo_rapido
                     self.velocidad = self.velocidad_rapida if self.modo_rapido else self.velocidad_normal
-                elif ev.key == pygame.K_s:
-                    if len(self.sim.pacientes_completados) > 0:
-                        self.mostrar_resumen = True
                 elif ev.key == pygame.K_r:
                     self.sim.reiniciar()
                     self.mostrar_resumen = False
@@ -78,11 +76,12 @@ class Visualizador:
         t = self.fuente_titulo.render("SIMULACIÓN RESONADOR V3.0 - GRILLA FLEXIBLE", True, (255, 255, 255))
         self.pantalla.blit(t, (10, 12))
         
-        # Mostrar tiempo de simulación
-        horas = 8 + int(self.sim.tiempo_actual // 60)
+        # Mostrar tiempo actual
+        horas = int(self.sim.tiempo_actual // 60) + 8
         minutos = int(self.sim.tiempo_actual % 60)
-        t_tiempo = self.fuente.render(f"{horas:02d}:{minutos:02d}", True, (255, 255, 255))
-        self.pantalla.blit(t_tiempo, (config.VENTANA_ANCHO - 100, 14))
+        tiempo_txt = f"{horas:02d}:{minutos:02d}"
+        t = self.fuente.render(tiempo_txt, True, (255, 255, 255))
+        self.pantalla.blit(t, (config.VENTANA_ANCHO - 100, 15))
     
     def _dibujar_layout(self):
         def dibujar_area(key, nombre, color):
@@ -96,7 +95,6 @@ class Visualizador:
         dibujar_area('sala_espera', 'SALA DE ESPERA', config.COLOR_SALA_ESPERA)
         dibujar_area('mesa_atencion', 'Mesa', config.COLOR_MESA)
         
-        # Pasillos
         l = config.LAYOUT['pasillo_vertical']
         pygame.draw.rect(self.pantalla, config.COLOR_PASILLO, (l['x'], l['y'], l['ancho'], l['alto']))
         l = config.LAYOUT['pasillo_horizontal']
@@ -106,7 +104,6 @@ class Visualizador:
         dibujar_area('box', 'Box', config.COLOR_BOX)
         dibujar_area('sala_resonancia', 'SALA DE RESONANCIA', config.COLOR_SALA_RESONANCIA)
         
-        # Resonador destacado
         l = config.LAYOUT['resonador']
         pygame.draw.rect(self.pantalla, (80, 80, 80), (l['x']+4, l['y']+4, l['ancho'], l['alto']), 0, 10)
         pygame.draw.rect(self.pantalla, config.COLOR_RESONADOR, (l['x'], l['y'], l['ancho'], l['alto']), 0, 10)
@@ -118,92 +115,94 @@ class Visualizador:
     def _dibujar_pacientes(self):
         for p in self.sim.todos_los_pacientes():
             x, y = int(p.posicion[0]), int(p.posicion[1])
-            # Sombra
             pygame.draw.circle(self.pantalla, (180, 180, 180), (x+2, y+2), 16)
-            # Paciente
-            color = config.COLOR_PACIENTE_ACTIVO if p == self.sim.obtener_paciente_activo() else config.COLOR_PACIENTE
-            pygame.draw.circle(self.pantalla, color, (x, y), 16)
+            pygame.draw.circle(self.pantalla, config.COLOR_PACIENTE_ACTIVO, (x, y), 16)
             pygame.draw.circle(self.pantalla, config.COLOR_TEXTO, (x, y), 16, 2)
-            # Número
             t = self.fuente_pequena.render(f"#{p.id}", True, (255, 255, 255))
             r = t.get_rect(center=(x, y))
             self.pantalla.blit(t, r)
     
     def _dibujar_metricas(self):
         px, py = 980, 70
-        pw, ph = 280, 600
+        pw, ph = 280, 550
         
-        # Panel
         pygame.draw.rect(self.pantalla, (200, 200, 200), (px+4, py+4, pw, ph), 0, 10)
         pygame.draw.rect(self.pantalla, config.COLOR_PANEL, (px, py, pw, ph), 0, 10)
         pygame.draw.rect(self.pantalla, config.COLOR_BORDE, (px, py, pw, ph), 2, 10)
         
-        # Título
         pygame.draw.rect(self.pantalla, (60, 90, 140), (px, py, pw, 40), 0, 10)
-        t = self.fuente_titulo.render("ESTADO", True, (255, 255, 255))
-        self.pantalla.blit(t, (px+95, py+8))
+        t = self.fuente_titulo.render("MÉTRICAS", True, (255, 255, 255))
+        self.pantalla.blit(t, (px+85, py+8))
         
         y = py + 55
         
-        # Pacientes programados
-        t = self.fuente_pequena.render(f"Pacientes programados: {len(self.sim.pacientes_programados)}", True, (100, 100, 100))
-        self.pantalla.blit(t, (px+15, y))
-        y += 25
+        p_activo = self.sim.obtener_paciente_activo()
         
-        # Pacientes en espera
-        t = self.fuente_pequena.render(f"En sala de espera: {len(self.sim.pacientes_en_espera)}", True, (0, 100, 200))
-        self.pantalla.blit(t, (px+15, y))
-        y += 25
-        
-        # Pacientes completados
-        t = self.fuente_pequena.render(f"Completados: {len(self.sim.pacientes_completados)}", True, (0, 150, 0))
-        self.pantalla.blit(t, (px+15, y))
-        y += 40
-        
-        # Paciente activo
-        p = self.sim.obtener_paciente_activo()
-        if p:
-            t = self.fuente.render(f"Paciente #{p.id}", True, (60, 90, 140))
+        if p_activo:
+            t = self.fuente.render(f"Paciente #{p_activo.id}", True, (60, 90, 140))
             self.pantalla.blit(t, (px+15, y))
             y += 35
             
-            t = self.fuente_pequena.render(f"Turno: {p.turno_asignado:.0f} min", True, config.COLOR_TEXTO)
-            self.pantalla.blit(t, (px+15, y))
-            y += 22
-            
-            t = self.fuente_pequena.render(f"Llegada: {p.desvio_llegada:.1f} min", True, config.COLOR_TEXTO)
+            t = self.fuente_pequena.render(f"Turno: {p_activo.turno_asignado:.1f} min", True, config.COLOR_TEXTO)
             self.pantalla.blit(t, (px+15, y))
             y += 25
             
-            t = self.fuente_pequena.render(f"Validación: {p.tiempo_validacion:.1f} min", True, config.COLOR_TEXTO)
+            t = self.fuente_pequena.render(f"Llegada: {p_activo.desvio_llegada:.1f} min", True, config.COLOR_TEXTO)
             self.pantalla.blit(t, (px+15, y))
-            y += 22
+            y += 25
             
-            t = self.fuente_pequena.render(f"Box: {p.tiempo_box:.1f} min", True, config.COLOR_TEXTO)
+            t = self.fuente_pequena.render(f"Validación: {p_activo.tiempo_validacion:.1f} min", True, config.COLOR_TEXTO)
+            self.pantalla.blit(t, (px+15, y))
+            y += 25
+            
+            t = self.fuente_pequena.render(f"Tiempo en box: {p_activo.tiempo_box:.1f} min", True, config.COLOR_TEXTO)
             self.pantalla.blit(t, (px+15, y))
             y += 25
             
             t = self.fuente_pequena.render("Tipo de estudio:", True, config.COLOR_TEXTO)
             self.pantalla.blit(t, (px+15, y))
-            y += 20
-            t = self.fuente.render(p.tipo_estudio, True, (0, 100, 200))
+            y += 22
+            t = self.fuente.render(p_activo.tipo_estudio, True, (0, 100, 200))
             self.pantalla.blit(t, (px+15, y))
-            y += 30
+            y += 35
             
-            t = self.fuente_pequena.render(f"Scan: {p.tiempo_scan:.1f} min", True, config.COLOR_TEXTO)
+            t = self.fuente_pequena.render(f"Tiempo estudio: {p_activo.tiempo_scan:.1f} min", True, config.COLOR_TEXTO)
+            self.pantalla.blit(t, (px+15, y))
+            y += 25
+            
+            t = self.fuente_pequena.render(f"Tiempo salida: {p_activo.tiempo_salida:.1f} min", True, config.COLOR_TEXTO)
+            self.pantalla.blit(t, (px+15, y))
+            y += 25
+            
+            tiempo_circ = p_activo.calcular_tiempo_circuito()
+            t = self.fuente_pequena.render("Tiempo en circuito:", True, config.COLOR_TEXTO)
             self.pantalla.blit(t, (px+15, y))
             y += 22
-            
-            t = self.fuente_pequena.render(f"Salida: {p.tiempo_salida:.1f} min", True, config.COLOR_TEXTO)
+            t = self.fuente.render(f"{tiempo_circ:.1f} min", True, (0, 150, 0))
             self.pantalla.blit(t, (px+15, y))
-            y += 30
+            y += 35
             
-            t = self.fuente_pequena.render("Estado:", True, config.COLOR_TEXTO)
+            estado_txt = config.ESTADOS_PACIENTE.get(p_activo.estado, p_activo.estado)
+            t = self.fuente_pequena.render("Estado actual:", True, config.COLOR_TEXTO)
             self.pantalla.blit(t, (px+15, y))
-            y += 20
-            estado_txt = config.ESTADOS_PACIENTE.get(p.estado, p.estado)
+            y += 22
             t = self.fuente_pequena.render(estado_txt, True, (200, 50, 50))
             self.pantalla.blit(t, (px+15, y))
+        
+        # Estadísticas generales
+        y = py + ph - 110
+        pygame.draw.line(self.pantalla, config.COLOR_BORDE, (px+15, y-10), (px+pw-15, y-10), 1)
+        
+        t = self.fuente_pequena.render(f"Programados: {len(self.sim.pacientes_programados)}", True, config.COLOR_TEXTO)
+        self.pantalla.blit(t, (px+15, y))
+        y += 25
+        
+        t = self.fuente_pequena.render(f"En espera: {len(self.sim.pacientes_en_espera)}", True, config.COLOR_TEXTO)
+        self.pantalla.blit(t, (px+15, y))
+        y += 25
+        
+        t = self.fuente_pequena.render(f"Completados: {len(self.sim.pacientes_completados)}", True, (0, 150, 0))
+        self.pantalla.blit(t, (px+15, y))
     
     def _dibujar_controles(self):
         y = config.VENTANA_ALTO - 50
@@ -211,8 +210,6 @@ class Visualizador:
         
         if self.sim.pausada:
             t = self.fuente.render("⏸ PAUSADO", True, (255, 0, 0))
-        elif self.sim.finalizada:
-            t = self.fuente.render("✓ FINALIZADO", True, (0, 150, 0))
         else:
             t = self.fuente.render("▶ EJECUTANDO", True, (0, 200, 0))
         self.pantalla.blit(t, (15, y))
@@ -221,7 +218,7 @@ class Visualizador:
         t = self.fuente_pequena.render(vel_texto, True, config.COLOR_TEXTO)
         self.pantalla.blit(t, (15, y+25))
         
-        controles = "ESPACIO: Pausa | V: Velocidad x2 | S: Resumen | R: Reiniciar | ESC: Salir"
+        controles = "ESPACIO: Pausa | V: Velocidad | R: Reiniciar | ESC: Salir"
         t = self.fuente_pequena.render(controles, True, config.COLOR_TEXTO)
         self.pantalla.blit(t, (200, y+25))
     
@@ -231,18 +228,18 @@ class Visualizador:
         overlay.fill((245, 245, 250))
         self.pantalla.blit(overlay, (0, 0))
         
-        px, py = 150, 100
-        pw, ph = 980, 760
+        px, py = 150, 120
+        pw, ph = 980, 720
         
         pygame.draw.rect(self.pantalla, (100, 100, 100), (px+8, py+8, pw, ph), 0, 15)
         pygame.draw.rect(self.pantalla, (255, 255, 255), (px, py, pw, ph), 0, 15)
         pygame.draw.rect(self.pantalla, (60, 90, 140), (px, py, pw, 60), 0, 15)
         
-        t = self.fuente_titulo.render("RESUMEN DEL DÍA - GRILLA FLEXIBLE", True, (255, 255, 255))
+        t = self.fuente_titulo.render("RESUMEN DEL DÍA COMPLETO", True, (255, 255, 255))
         r = t.get_rect(center=(px+pw//2, py+30))
         self.pantalla.blit(t, r)
         
-        y = py + 90
+        y = py + 100
         stats = self.sim.obtener_estadisticas_dia()
         
         # Total pacientes
@@ -251,34 +248,45 @@ class Visualizador:
         y += 40
         
         # Jornada
-        t = self.fuente_pequena.render("Jornada laboral: 08:00 - 20:00", True, (100, 100, 100))
+        t = self.fuente_pequena.render("Jornada: 08:00 - 20:00 (720 minutos)", True, (100, 100, 100))
+        self.pantalla.blit(t, (px+50, y))
+        y += 45
+        
+        # ÚLTIMO TURNO Y FINALIZACIÓN
+        ultimo_turno = stats['ultimo_turno_asignado']
+        hora_fin = stats['hora_finalizacion']
+        
+        # Convertir a formato HH:MM
+        ult_h = int(ultimo_turno // 60) + 8
+        ult_m = int(ultimo_turno % 60)
+        fin_h = int(hora_fin // 60) + 8
+        fin_m = int(hora_fin % 60)
+        
+        t = self.fuente.render("Último turno y finalización:", True, (60, 90, 140))
         self.pantalla.blit(t, (px+50, y))
         y += 35
         
-        # Último turno dado
-        t = self.fuente.render(f"Último turno dado: {stats['ultimo_turno_hora']} ({stats['ultimo_turno_min']:.0f} min)", 
-                              True, (200, 100, 0))
-        self.pantalla.blit(t, (px+50, y))
-        y += 30
+        t = self.fuente_pequena.render(f"  • Último turno asignado: {ult_h:02d}:{ult_m:02d} ({ultimo_turno:.1f} min)", True, config.COLOR_TEXTO)
+        self.pantalla.blit(t, (px+70, y))
+        y += 28
         
-        # Hora de finalización
-        t = self.fuente.render(f"Finalización: {stats['hora_finalizacion_hora']} ({stats['hora_finalizacion_min']:.0f} min)", 
-                              True, (200, 0, 0))
-        self.pantalla.blit(t, (px+50, y))
-        y += 40
+        t = self.fuente_pequena.render(f"  • Finalización: {fin_h:02d}:{fin_m:02d} ({hora_fin:.1f} min)", True, config.COLOR_TEXTO)
+        self.pantalla.blit(t, (px+70, y))
+        y += 35
         
-        # Verificar horas extras
-        if stats['hora_finalizacion_min'] > 720:
-            minutos_extra = stats['hora_finalizacion_min'] - 720
-            t = self.fuente.render(f"⚠️ HORAS EXTRAS: {minutos_extra:.0f} minutos", True, (255, 0, 0))
+        # Horas extras
+        if hora_fin > 720:
+            horas_extra = hora_fin - 720
+            color_extra = (200, 50, 50)
+            t = self.fuente.render(f"⚠️ HORAS EXTRAS: {horas_extra:.1f} min", True, color_extra)
             self.pantalla.blit(t, (px+70, y))
             y += 40
         else:
             t = self.fuente_pequena.render("✓ Sin horas extras", True, (0, 150, 0))
             self.pantalla.blit(t, (px+70, y))
-            y += 35
+            y += 40
         
-        # Estudios realizados
+        # Estudios
         t = self.fuente.render("Estudios realizados:", True, (60, 90, 140))
         self.pantalla.blit(t, (px+50, y))
         y += 35
@@ -288,11 +296,8 @@ class Visualizador:
             self.pantalla.blit(t, (px+70, y))
             y += 28
         
-        y += 20
-        
-        # Tiempo promedio
-        t = self.fuente.render(f"Tiempo promedio por paciente: {stats['tiempo_promedio_total']:.1f} min", 
-                              True, config.COLOR_TEXTO)
+        y += 30
+        t = self.fuente.render(f"Tiempo promedio por paciente: {stats['tiempo_promedio_total']:.1f} min", True, config.COLOR_TEXTO)
         self.pantalla.blit(t, (px+50, y))
         
         y = py + ph - 50
