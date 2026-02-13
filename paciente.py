@@ -100,23 +100,3 @@ class Paciente:
         self.posicion[0] += dx * factor
         self.posicion[1] += dy * factor
         return False
-
-        if not self.moviendo or not self.ruta: return False
-        objetivo = self.ruta[self.idx_ruta]
-        dx = objetivo[0] - self.posicion[0]
-        dy = objetivo[1] - self.posicion[1]
-        dist = (dx**2 + dy**2)**0.5
-        
-        if dist < 5:
-            self.posicion = list(objetivo)
-            self.idx_ruta += 1
-            if self.idx_ruta >= len(self.ruta):
-                self.moviendo = False
-                return True
-            return False
-        
-        vel = config.VELOCIDAD_PACIENTE * dt
-        factor = vel / dist
-        self.posicion[0] += dx * factor
-        self.posicion[1] += dy * factor
-        return False
