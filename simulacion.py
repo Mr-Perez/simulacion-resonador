@@ -1,4 +1,4 @@
-"""Motor de Simulación V3.0 - Grilla Flexible con Llegadas Realistas"""
+"""Motor de Simulación V3.1 - Llegadas espaciadas y salida completa"""
 from datetime import datetime, timedelta
 import config
 from paciente import Paciente
@@ -14,10 +14,14 @@ class SimuladorResonador:
         self.paciente_en_validacion = None
         self.paciente_en_box = None
         self.paciente_en_resonador = None
+        self.pacientes_saliendo = []  # NUEVO: pacientes en ruta de salida
         self.pacientes_completados = []
         
         self.pausada = False
         self.finalizada = False
+        
+        # Control de llegadas espaciadas
+        self.ultimo_tiempo_llegada = -999  # Tiempo de última llegada
         
         self._generar_agenda_flexible()
         
@@ -31,7 +35,6 @@ class SimuladorResonador:
             p.id = numero_paciente
             p.turno_asignado = turno_actual
             
-            # Tiempo estimado para siguiente turno
             tiempo_estimado = (
                 p.tiempo_validacion +
                 2.0 +
@@ -41,18 +44,16 @@ class SimuladorResonador:
                 p.tiempo_salida
             )
             
-            # Hora de llegada REAL = turno + desvío
             p.hora_llegada_real = turno_actual + p.desvio_llegada
             p.estado = 'PROGRAMADO'
             
             self.pacientes_programados.append(p)
             
-            # GRILLA FLEXIBLE
             turno_actual += tiempo_estimado
             numero_paciente += 1
         
         print(f"✓ Agenda: {len(self.pacientes_programados)} pacientes")
-        print(f"  Turnos: {self.pacientes_programados[0].turno_asignado:.0f} - {self.pacientes_programados[-1].turno_asignado:.0f} min")
+        print(f"  Turnos: 0 - {self.pacientes_programados[-1].turno_asignado:.0f} min")
         
     def actualizar(self, delta_sim, delta_real, multiplicador_velocidad=1.0):
         if self.pausada or self.finalizada:
@@ -61,7 +62,7 @@ class SimuladorResonador:
         self.tiempo_actual += delta_sim
         self.datetime_actual = self.fecha_inicio + timedelta(minutes=self.tiempo_actual)
         
-        # 1. Procesar llegadas
+        # 1. Procesar llegadas (con espaciado)
         self._procesar_llegadas()
         
         # 2. Actualizar movimientos
@@ -72,6 +73,7 @@ class SimuladorResonador:
             todos.append(self.paciente_en_box)
         if self.paciente_en_resonador:
             todos.append(self.paciente_en_resonador)
+        todos.extend(self.pacientes_saliendo)
         
         for p in todos:
             if p.moviendo:
@@ -93,27 +95,33 @@ class SimuladorResonador:
             not self.pacientes_en_espera and
             not self.paciente_en_validacion and
             not self.paciente_en_box and
-            not self.paciente_en_resonador):
+            not self.paciente_en_resonador and
+            not self.pacientes_saliendo):
             self.finalizada = True
     
     def _procesar_llegadas(self):
-        """Procesar llegadas - SOLO 1 paciente por actualización"""
+        """Procesar llegadas CON ESPACIADO entre ellas"""
         if not self.pacientes_programados:
             return
         
-        # Ordenar por hora de llegada
+        # ESPACIADO: Solo permitir llegada si pasaron 2+ minutos desde la última
+        tiempo_desde_ultima = self.tiempo_actual - self.ultimo_tiempo_llegada
+        if tiempo_desde_ultima < config.TIEMPO_ENTRE_LLEGADAS:
+            return
+        
         self.pacientes_programados.sort(key=lambda p: p.hora_llegada_real)
         
-        # Procesar SOLO 1 paciente si ya llegó su hora
+        # Procesar solo 1 si ya llegó su hora
         if self.pacientes_programados and self.tiempo_actual >= self.pacientes_programados[0].hora_llegada_real:
             p = self.pacientes_programados.pop(0)
             p.estado = 'LLEGADA'
             p.ts_inicio = self.datetime_actual
             p.definir_ruta(['esperando', 'entrada', 'sala_espera'])
             self.pacientes_en_espera.append(p)
+            self.ultimo_tiempo_llegada = self.tiempo_actual  # Registrar tiempo
     
     def _gestionar_flujo(self):
-        """Gestiona el flujo de pacientes"""
+        """Gestiona el flujo incluyendo SALIDA completa"""
         
         # Sala → Mesa
         if not self.paciente_en_validacion and self.pacientes_en_espera:
@@ -126,7 +134,7 @@ class SimuladorResonador:
                     self.paciente_en_validacion = p
                     break
         
-        # Mesa → Box (ruta completa)
+        # Mesa → Box
         if self.paciente_en_validacion and not self.paciente_en_validacion.moviendo:
             p = self.paciente_en_validacion
             if p.tiempo_en_etapa >= p.tiempo_validacion:
@@ -151,17 +159,56 @@ class SimuladorResonador:
                                    'resonancia', 'resonador'])
                     self.paciente_en_resonador = p
         
-        # Resonador → Completado
+        # Resonador → SALIDA (NUEVO)
         if self.paciente_en_resonador and not self.paciente_en_resonador.moviendo:
             p = self.paciente_en_resonador
             if p.tiempo_en_etapa >= p.tiempo_total_resonador:
                 self.paciente_en_resonador = None
-                p.estado = 'COMPLETADO'
+                p.estado = 'SALIENDO'
                 p.ts_fin = self.datetime_actual
                 if p.ts_inicio:
                     p.tiempo_total = (p.ts_fin - p.ts_inicio).total_seconds() / 60
-                p.definir_ruta(['salida'])
+                # Ruta de salida completa
+                p.definir_ruta(['salida_resonancia', 'salida_vestuario', 
+                               'salida_pasillo_h', 'salida_pasillo_v', 
+                               'retorno_sala', 'salida_final'])
+                self.pacientes_saliendo.append(p)
+        
+        # Saliendo → Completado (NUEVO)
+        for p in self.pacientes_saliendo[:]:
+            if not p.moviendo:
+                self.pacientes_saliendo.remove(p)
+                p.estado = 'COMPLETADO'
                 self.pacientes_completados.append(p)
+    
+    def simular_dia_completo_rapido(self):
+        """Simula el resto del día rápidamente (para tecla S)"""
+        pacientes_simulados = []
+        turno_actual = 0.0
+        numero = 1
+        
+        while turno_actual < 690:
+            p = Paciente(turno_actual, self.fecha_inicio)
+            p.id = numero
+            p.turno_asignado = turno_actual
+            
+            tiempo_servicio = (
+                p.tiempo_validacion +
+                2.0 +
+                p.tiempo_box +
+                p.tiempo_total_resonador +
+                2.0 +
+                p.tiempo_salida
+            )
+            
+            p.hora_llegada_real = turno_actual + p.desvio_llegada
+            p.estado = 'COMPLETADO'
+            pacientes_simulados.append(p)
+            
+            turno_actual += tiempo_servicio
+            numero += 1
+        
+        return pacientes_simulados
     
     def obtener_paciente_activo(self):
         if self.paciente_en_resonador:
@@ -172,6 +219,8 @@ class SimuladorResonador:
             return self.paciente_en_validacion
         if self.pacientes_en_espera:
             return self.pacientes_en_espera[0]
+        if self.pacientes_saliendo:
+            return self.pacientes_saliendo[0]
         return None
     
     def todos_los_pacientes(self):
@@ -182,10 +231,14 @@ class SimuladorResonador:
             pacientes.append(self.paciente_en_box)
         if self.paciente_en_resonador:
             pacientes.append(self.paciente_en_resonador)
+        pacientes.extend(self.pacientes_saliendo)
         return pacientes
     
-    def obtener_estadisticas_dia(self):
-        if not self.pacientes_completados:
+    def obtener_estadisticas_dia(self, pacientes=None):
+        if pacientes is None:
+            pacientes = self.pacientes_completados
+        
+        if not pacientes:
             return {
                 'estudios_por_tipo': {},
                 'tiempo_promedio_total': 0,
@@ -198,12 +251,12 @@ class SimuladorResonador:
         
         estudios = {}
         tiempos = []
-        for p in self.pacientes_completados:
+        for p in pacientes:
             estudios[p.tipo_estudio] = estudios.get(p.tipo_estudio, 0) + 1
             tiempo = p.calcular_tiempo_circuito()
             tiempos.append(tiempo)
         
-        ultimo = self.pacientes_completados[-1]
+        ultimo = pacientes[-1]
         ultimo_turno_min = ultimo.turno_asignado
         hora_fin_min = ultimo.hora_llegada_real + ultimo.calcular_tiempo_circuito()
         
@@ -215,7 +268,7 @@ class SimuladorResonador:
         return {
             'estudios_por_tipo': estudios,
             'tiempo_promedio_total': sum(tiempos) / len(tiempos) if tiempos else 0,
-            'total_pacientes': len(self.pacientes_completados),
+            'total_pacientes': len(pacientes),
             'ultimo_turno_min': ultimo_turno_min,
             'ultimo_turno_hora': min_a_hora(ultimo_turno_min),
             'hora_finalizacion_min': hora_fin_min,
