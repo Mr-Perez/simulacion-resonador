@@ -1,4 +1,4 @@
-"""Visualización V3.0 - Grilla Flexible"""
+"""Visualización V3.1 - Con salida completa y resumen automático"""
 import pygame
 import sys
 import config
@@ -8,7 +8,7 @@ class Visualizador:
         pygame.init()
         self.sim = simulador
         self.pantalla = pygame.display.set_mode((config.VENTANA_ANCHO, config.VENTANA_ALTO))
-        pygame.display.set_caption("Simulación Resonador V3.0 - GRILLA FLEXIBLE")
+        pygame.display.set_caption("Simulación Resonador V3.1 - GRILLA FLEXIBLE")
         self.reloj = pygame.time.Clock()
         self.fuente = pygame.font.Font(None, 22)
         self.fuente_pequena = pygame.font.Font(None, 18)
@@ -19,6 +19,7 @@ class Visualizador:
         self.velocidad = self.velocidad_normal
         self.modo_rapido = False
         self.mostrar_resumen = False
+        self.pacientes_dia_completo = []
     
     def ejecutar(self):
         while self.ejecutando:
@@ -31,6 +32,8 @@ class Visualizador:
                 self.sim.actualizar(dt_sim, dt_real, mult_vel)
             
             if self.sim.finalizada and not self.mostrar_resumen:
+                # Simular día completo antes de mostrar resumen
+                self.pacientes_dia_completo = self.sim.simular_dia_completo_rapido()
                 self.mostrar_resumen = True
             
             if self.mostrar_resumen:
@@ -49,6 +52,7 @@ class Visualizador:
                 if ev.key == pygame.K_RETURN:
                     if self.mostrar_resumen:
                         self.mostrar_resumen = False
+                        self.pacientes_dia_completo = []
                 elif ev.key == pygame.K_SPACE:
                     if self.sim.pausada:
                         self.sim.reanudar()
@@ -58,12 +62,13 @@ class Visualizador:
                     self.modo_rapido = not self.modo_rapido
                     self.velocidad = self.velocidad_rapida if self.modo_rapido else self.velocidad_normal
                 elif ev.key == pygame.K_s:
-                    # Tecla S para resumen
-                    if len(self.sim.pacientes_completados) > 0:
-                        self.mostrar_resumen = True
+                    # Simular día completo y mostrar resumen
+                    self.pacientes_dia_completo = self.sim.simular_dia_completo_rapido()
+                    self.mostrar_resumen = True
                 elif ev.key == pygame.K_r:
                     self.sim.reiniciar()
                     self.mostrar_resumen = False
+                    self.pacientes_dia_completo = []
                 elif ev.key == pygame.K_ESCAPE:
                     self.ejecutando = False
     
@@ -78,7 +83,7 @@ class Visualizador:
     
     def _dibujar_header(self):
         pygame.draw.rect(self.pantalla, (60, 90, 140), (0, 0, config.VENTANA_ANCHO, 50))
-        t = self.fuente_titulo.render("SIMULACIÓN RESONADOR V3.0 - GRILLA FLEXIBLE", True, (255, 255, 255))
+        t = self.fuente_titulo.render("SIMULACIÓN RESONADOR V3.1 - GRILLA FLEXIBLE", True, (255, 255, 255))
         self.pantalla.blit(t, (10, 12))
         
         horas = 8 + int(self.sim.tiempo_actual // 60)
@@ -119,7 +124,15 @@ class Visualizador:
         for p in self.sim.todos_los_pacientes():
             x, y = int(p.posicion[0]), int(p.posicion[1])
             pygame.draw.circle(self.pantalla, (180, 180, 180), (x+2, y+2), 16)
-            color = config.COLOR_PACIENTE_ACTIVO if p == self.sim.obtener_paciente_activo() else config.COLOR_PACIENTE
+            
+            # Color diferente para pacientes saliendo
+            if p.estado == 'SALIENDO':
+                color = (100, 255, 100)  # Verde para saliendo
+            elif p == self.sim.obtener_paciente_activo():
+                color = config.COLOR_PACIENTE_ACTIVO
+            else:
+                color = config.COLOR_PACIENTE
+            
             pygame.draw.circle(self.pantalla, color, (x, y), 16)
             pygame.draw.circle(self.pantalla, config.COLOR_TEXTO, (x, y), 16, 2)
             t = self.fuente_pequena.render(f"#{p.id}", True, (255, 255, 255))
@@ -192,11 +205,9 @@ class Visualizador:
             self.pantalla.blit(t, (px+15, y))
             y += 35
         
-        # Separador
         pygame.draw.line(self.pantalla, (150, 150, 150), (px+10, y), (px+pw-10, y), 1)
         y += 15
         
-        # Estadísticas globales
         t = self.fuente_pequena.render(f"Programados: {len(self.sim.pacientes_programados)}", True, (100, 100, 100))
         self.pantalla.blit(t, (px+15, y))
         y += 25
@@ -224,8 +235,7 @@ class Visualizador:
         t = self.fuente_pequena.render(vel_texto, True, config.COLOR_TEXTO)
         self.pantalla.blit(t, (15, y+25))
         
-        # IMPORTANTE: Incluir S en los controles
-        controles = "ESPACIO: Pausa | V: Velocidad | S: Resumen | R: Reiniciar | ESC: Salir"
+        controles = "ESPACIO: Pausa | V: Velocidad | S: Resumen día completo | R: Reiniciar | ESC: Salir"
         t = self.fuente_pequena.render(controles, True, config.COLOR_TEXTO)
         self.pantalla.blit(t, (200, y+25))
     
@@ -242,18 +252,20 @@ class Visualizador:
         pygame.draw.rect(self.pantalla, (255, 255, 255), (px, py, pw, ph), 0, 15)
         pygame.draw.rect(self.pantalla, (60, 90, 140), (px, py, pw, 60), 0, 15)
         
-        t = self.fuente_titulo.render("RESUMEN DEL DÍA - GRILLA FLEXIBLE", True, (255, 255, 255))
+        t = self.fuente_titulo.render("RESUMEN DEL DÍA COMPLETO - GRILLA FLEXIBLE", True, (255, 255, 255))
         r = t.get_rect(center=(px+pw//2, py+30))
         self.pantalla.blit(t, r)
         
         y = py + 90
-        stats = self.sim.obtener_estadisticas_dia()
+        
+        # Usar pacientes simulados del día completo
+        stats = self.sim.obtener_estadisticas_dia(self.pacientes_dia_completo)
         
         t = self.fuente.render(f"Total de pacientes: {stats['total_pacientes']}", True, config.COLOR_TEXTO)
         self.pantalla.blit(t, (px+50, y))
         y += 40
         
-        t = self.fuente_pequena.render("Jornada laboral: 08:00 - 20:00", True, (100, 100, 100))
+        t = self.fuente_pequena.render("Jornada laboral: 08:00 - 20:00 (720 min)", True, (100, 100, 100))
         self.pantalla.blit(t, (px+50, y))
         y += 35
         
