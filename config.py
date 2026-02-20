@@ -131,4 +131,4 @@ FPS = 60
 MOSTRAR_RESUMEN_FINAL = True
 
 # Control de llegadas
-TIEMPO_ENTRE_LLEGADAS = 2.0  # Mínimo 2 minutos entre llegadas
+TIEMPO_ENTRE_LLEGADAS = 20.0  # Mínimo 20 minutos entre llegadas (tiempo promedio del circuito)
