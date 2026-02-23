@@ -100,21 +100,24 @@ class SimuladorResonador:
             self.finalizada = True
     
     def _procesar_llegadas(self):
-        """Procesar llegadas - MÁXIMO 1 EN ESPERA"""
+        """Procesar llegadas - Solo cuando el anterior salió del box"""
         if not self.pacientes_programados:
             return
         
-        # RESTRICCIÓN 1: No permitir más de 1 paciente esperando
+        # RESTRICCIÓN 1: Máximo 1 en espera
         if len(self.pacientes_en_espera) >= 1:
             return
         
-        # RESTRICCIÓN 2: El circuito debe tener espacio
-        # Si hay alguien en validación pero nadie adelante, NO permitir llegada
-        # Solo permitir llegada cuando alguien está en box/resonador (ha avanzado)
-        if self.paciente_en_validacion:
-            # Si mesa ocupada pero no hay nadie en box ni resonador, esperar
-            if not self.paciente_en_box and not self.paciente_en_resonador:
-                return
+        # RESTRICCIÓN 2: Solo permitir llegada cuando hay alguien en el RESONADOR
+        # Es decir, alguien ya SALIÓ del box/vestuario
+        # EXCEPCIÓN: Permitir el primer paciente cuando el sistema está vacío
+        sistema_vacio = (not self.paciente_en_validacion and 
+                        not self.paciente_en_box and 
+                        not self.paciente_en_resonador and
+                        len(self.pacientes_completados) == 0)
+        
+        if not sistema_vacio and not self.paciente_en_resonador:
+            return  # Nadie ha salido del box aún, esperar
         
         # RESTRICCIÓN 3: Tiempo mínimo entre llegadas
         tiempo_desde_ultima = self.tiempo_actual - self.ultimo_tiempo_llegada
