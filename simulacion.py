@@ -100,11 +100,23 @@ class SimuladorResonador:
             self.finalizada = True
     
     def _procesar_llegadas(self):
-        """Procesar llegadas CON ESPACIADO entre ellas"""
+        """Procesar llegadas - MÁXIMO 1 EN ESPERA"""
         if not self.pacientes_programados:
             return
         
-        # ESPACIADO: Solo permitir llegada si pasaron 2+ minutos desde la última
+        # RESTRICCIÓN 1: No permitir más de 1 paciente esperando
+        if len(self.pacientes_en_espera) >= 1:
+            return
+        
+        # RESTRICCIÓN 2: El circuito debe tener espacio
+        # Si hay alguien en validación pero nadie adelante, NO permitir llegada
+        # Solo permitir llegada cuando alguien está en box/resonador (ha avanzado)
+        if self.paciente_en_validacion:
+            # Si mesa ocupada pero no hay nadie en box ni resonador, esperar
+            if not self.paciente_en_box and not self.paciente_en_resonador:
+                return
+        
+        # RESTRICCIÓN 3: Tiempo mínimo entre llegadas
         tiempo_desde_ultima = self.tiempo_actual - self.ultimo_tiempo_llegada
         if tiempo_desde_ultima < config.TIEMPO_ENTRE_LLEGADAS:
             return
@@ -118,7 +130,7 @@ class SimuladorResonador:
             p.ts_inicio = self.datetime_actual
             p.definir_ruta(['esperando', 'entrada', 'sala_espera'])
             self.pacientes_en_espera.append(p)
-            self.ultimo_tiempo_llegada = self.tiempo_actual  # Registrar tiempo
+            self.ultimo_tiempo_llegada = self.tiempo_actual
     
     def _gestionar_flujo(self):
         """Gestiona el flujo incluyendo SALIDA completa"""
