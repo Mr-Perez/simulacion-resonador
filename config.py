@@ -129,6 +129,3 @@ VELOCIDAD_PACIENTE = 120
 VELOCIDAD_SIMULACION_DEFAULT = 5  # REDUCIDA de 10 a 5 para ver mejor las llegadas
 FPS = 60
 MOSTRAR_RESUMEN_FINAL = True
-
-# Control de llegadas
-TIEMPO_ENTRE_LLEGADAS = 20.0  # Mínimo 20 minutos entre llegadas (tiempo promedio del circuito)
