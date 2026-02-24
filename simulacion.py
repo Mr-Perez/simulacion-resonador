@@ -105,13 +105,26 @@ class SimuladorResonador:
             self.finalizada = True
     
     def _procesar_llegadas(self):
-        """Procesar llegadas - Basadas en turno + desvío individual"""
+        """Procesar llegadas - Solo cuando hay alguien SALIENDO (verde)"""
         if not self.pacientes_programados:
             return
         
         # RESTRICCIÓN 1: Máximo 1 en espera
         if len(self.pacientes_en_espera) >= 1:
             return
+        
+        # RESTRICCIÓN 2: Solo permitir llegada cuando hay alguien SALIENDO (VERDE)
+        # O cuando el sistema está vacío (primer paciente)
+        sistema_vacio = (not self.paciente_en_validacion and 
+                        not self.paciente_en_box and 
+                        not self.paciente_en_resonador and
+                        len(self.pacientes_saliendo) == 0 and
+                        len(self.pacientes_completados) == 0)
+        
+        tiene_alguien_saliendo = len(self.pacientes_saliendo) > 0
+        
+        if not sistema_vacio and not tiene_alguien_saliendo:
+            return  # Nadie está saliendo (verde), esperar
         
         # Ordenar por hora de llegada real (turno + desvío)
         self.pacientes_programados.sort(key=lambda p: p.hora_llegada_real)
