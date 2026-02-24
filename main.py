@@ -24,7 +24,7 @@ def main():
     print("  • Llegada tarde (5-10 min): 50%")
     print()
     print("REGLA VISUAL:")
-    print("  → Paciente VERDE (saliendo) = Siguiente puede llegar")
+    print("  → Paciente en BOX (rosa) = Siguiente puede llegar")
     print()
     print("CONTROLES:")
     print("  - ESPACIO: Pausar/Reanudar")
