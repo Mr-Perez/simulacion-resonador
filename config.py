@@ -13,27 +13,27 @@ INTERVALO_TURNOS = 30
 TIPOS_ESTUDIO = {
     'Cerebro': {
         'probabilidad': 0.25,
-        'tiempo_scan': (4, 6),
+        'tiempo_scan': (6, 9),  # Aumentado de (4,6)
         'tiempo_posicionamiento': (1, 2)
     },
     'Columna': {
         'probabilidad': 0.25,
-        'tiempo_scan': (5, 7),
+        'tiempo_scan': (7, 10),  # Aumentado de (5,7)
         'tiempo_posicionamiento': (1, 2)
     },
     'Articulaciones': {
         'probabilidad': 0.33,
-        'tiempo_scan': (4, 6),
+        'tiempo_scan': (6, 9),  # Aumentado de (4,6)
         'tiempo_posicionamiento': (1, 2)
     },
     'Cuerpo completo': {
         'probabilidad': 0.02,
-        'tiempo_scan': (20, 30),
+        'tiempo_scan': (25, 35),  # Aumentado de (20,30)
         'tiempo_posicionamiento': (2, 4)
     },
     'Otros': {
         'probabilidad': 0.15,
-        'tiempo_scan': (4, 8),
+        'tiempo_scan': (6, 10),  # Aumentado de (4,8)
         'tiempo_posicionamiento': (1, 3)
     }
 }
@@ -42,7 +42,7 @@ TIPOS_ESTUDIO = {
 # TIEMPOS DE PROCESO (tuplas min, max en minutos)
 # ============================================================================
 TIEMPO_VALIDACION = (3, 7)
-TIEMPO_BOX = (3, 6)  # REDUCIDO de (3,9) a (3,6)
+TIEMPO_BOX = (1, 2)  # REDUCIDO de (3,6) a (1,2) - solo cambiarse
 TIEMPO_SALIDA = (3, 5)
 
 # Probabilidades de llegada
