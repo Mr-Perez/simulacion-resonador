@@ -54,6 +54,11 @@ class SimuladorResonador:
         
         print(f"✓ Agenda: {len(self.pacientes_programados)} pacientes")
         print(f"  Turnos: 0 - {self.pacientes_programados[-1].turno_asignado:.0f} min")
+        print(f"\n📊 Ejemplos de llegadas (turno + desvío):")
+        for i in range(min(5, len(self.pacientes_programados))):
+            p = self.pacientes_programados[i]
+            desvio_texto = "temprano" if p.desvio_llegada < 0 else ("puntual" if p.desvio_llegada == 0 else "tarde")
+            print(f"  P#{p.id}: Turno {p.turno_asignado:.0f}min + {p.desvio_llegada:+.0f}min = Llega {p.hora_llegada_real:.0f}min ({desvio_texto})")
         
     def actualizar(self, delta_sim, delta_real, multiplicador_velocidad=1.0):
         if self.pausada or self.finalizada:
@@ -100,7 +105,7 @@ class SimuladorResonador:
             self.finalizada = True
     
     def _procesar_llegadas(self):
-        """Procesar llegadas - Solo cuando el anterior salió del box"""
+        """Procesar llegadas - Basadas en turno + desvío individual"""
         if not self.pacientes_programados:
             return
         
@@ -108,26 +113,17 @@ class SimuladorResonador:
         if len(self.pacientes_en_espera) >= 1:
             return
         
-        # RESTRICCIÓN 2: Solo permitir llegada cuando hay alguien en el RESONADOR
-        # Es decir, alguien ya SALIÓ del box/vestuario
-        # EXCEPCIÓN: Permitir el primer paciente cuando el sistema está vacío
-        sistema_vacio = (not self.paciente_en_validacion and 
-                        not self.paciente_en_box and 
-                        not self.paciente_en_resonador and
-                        len(self.pacientes_completados) == 0)
-        
-        if not sistema_vacio and not self.paciente_en_resonador:
-            return  # Nadie ha salido del box aún, esperar
-        
-        # RESTRICCIÓN 3: Tiempo mínimo entre llegadas
-        tiempo_desde_ultima = self.tiempo_actual - self.ultimo_tiempo_llegada
-        if tiempo_desde_ultima < config.TIEMPO_ENTRE_LLEGADAS:
-            return
-        
+        # Ordenar por hora de llegada real (turno + desvío)
         self.pacientes_programados.sort(key=lambda p: p.hora_llegada_real)
         
-        # Procesar solo 1 si ya llegó su hora
-        if self.pacientes_programados and self.tiempo_actual >= self.pacientes_programados[0].hora_llegada_real:
+        if not self.pacientes_programados:
+            return
+        
+        proximo = self.pacientes_programados[0]
+        
+        # El siguiente paciente llega en su hora_llegada_real (turno + desvío)
+        # SI el tiempo actual ya pasó esa hora
+        if self.tiempo_actual >= proximo.hora_llegada_real:
             p = self.pacientes_programados.pop(0)
             p.estado = 'LLEGADA'
             p.ts_inicio = self.datetime_actual
