@@ -1,7 +1,7 @@
 """
-SIMULADOR DE RESONADOR V3.0 - GRILLA FLEXIBLE
+SIMULADOR DE RESONADOR V3.2 - GRILLA FLEXIBLE
 ==============================================
-Sistema automático con llegadas realistas
+Sistema automático con llegadas visuales realistas
 """
 
 from simulacion import SimuladorResonador
@@ -9,24 +9,27 @@ from visualizacion import Visualizador
 
 def main():
     print("=" * 70)
-    print("SIMULADOR DE RESONADOR V3.0 - GRILLA FLEXIBLE")
+    print("SIMULADOR DE RESONADOR V3.2 - GRILLA FLEXIBLE")
     print("=" * 70)
     print()
-    print("CARACTERÍSTICAS V3.0:")
+    print("CARACTERÍSTICAS V3.2:")
     print("  ✓ GRILLA FLEXIBLE: Turnos cuando termina el anterior")
-    print("  ✓ LLEGADAS REALISTAS: Escalonadas según probabilidades")
+    print("  ✓ LLEGADAS VISUALES: Siguiente llega cuando hay alguien en VERDE")
     print("  ✓ SIMULACIÓN AUTOMÁTICA: Sin ENTER, corre sola")
     print("  ✓ Core: Anticipa tiempo para dar turnos precisos")
     print()
-    print("PROBABILIDADES:")
+    print("PROBABILIDADES DE LLEGADA:")
     print("  • Llegada temprano (-5 min): 20%")
     print("  • Llegada puntual (0 min): 30%")
     print("  • Llegada tarde (5-10 min): 50%")
     print()
+    print("REGLA VISUAL:")
+    print("  → Paciente VERDE (saliendo) = Siguiente puede llegar")
+    print()
     print("CONTROLES:")
     print("  - ESPACIO: Pausar/Reanudar")
     print("  - V: Velocidad x2")
-    print("  - S: Ver resumen")
+    print("  - S: Ver resumen día completo")
     print("  - R: Reiniciar")
     print("  - ESC: Salir")
     print()
