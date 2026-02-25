@@ -55,7 +55,10 @@ class SimuladorResonador:
         print(f"✓ Agenda: {len(self.pacientes_programados)} pacientes")
         print(f"  Turnos: 0 - {self.pacientes_programados[-1].turno_asignado:.0f} min")
         print(f"\n🎯 Regla de llegadas:")
-        print(f"  → Siguiente llega cuando hay alguien EN el BOX (rosa)")
+        print(f"  → Siguiente llega cuando hay alguien EN el RESONADOR (sala celeste)")
+        print(f"\n⏱️ Tiempos visuales (con velocidad 5x):")
+        print(f"  → Box: ~10 min = 2 segundos visuales")
+        print(f"  → Resonador: ~15 min = 3 segundos visuales")
         print(f"\n📊 Ejemplos de llegadas (turno + desvío):")
         for i in range(min(5, len(self.pacientes_programados))):
             p = self.pacientes_programados[i]
@@ -86,13 +89,16 @@ class SimuladorResonador:
             if p.moviendo:
                 p.actualizar_movimiento(delta_real, multiplicador_velocidad)
         
-        # 3. Actualizar tiempos
+        # 3. Actualizar tiempos (simulación y visuales)
         if self.paciente_en_validacion:
             self.paciente_en_validacion.tiempo_en_etapa += delta_sim
+            self.paciente_en_validacion.tiempo_visual_en_etapa += delta_real
         if self.paciente_en_box:
             self.paciente_en_box.tiempo_en_etapa += delta_sim
+            self.paciente_en_box.tiempo_visual_en_etapa += delta_real
         if self.paciente_en_resonador:
             self.paciente_en_resonador.tiempo_en_etapa += delta_sim
+            self.paciente_en_resonador.tiempo_visual_en_etapa += delta_real
         
         # 4. Gestionar flujo
         self._gestionar_flujo()
@@ -107,7 +113,7 @@ class SimuladorResonador:
             self.finalizada = True
     
     def _procesar_llegadas(self):
-        """Procesar llegadas - Cuando hay alguien EN el box (rosa)"""
+        """Procesar llegadas - Cuando hay alguien EN el RESONADOR (sala celeste)"""
         if not self.pacientes_programados:
             return
         
@@ -115,7 +121,8 @@ class SimuladorResonador:
         if len(self.pacientes_en_espera) >= 1:
             return
         
-        # RESTRICCIÓN 2: Solo permitir llegada cuando hay alguien EN el BOX
+        # RESTRICCIÓN 2: Solo permitir llegada cuando hay alguien EN el RESONADOR
+        # Es decir, cuando toca la sala de resonancia (cuadro celeste)
         # O cuando el sistema está vacío (primer paciente)
         sistema_vacio = (not self.paciente_en_validacion and 
                         not self.paciente_en_box and 
@@ -123,10 +130,10 @@ class SimuladorResonador:
                         len(self.pacientes_saliendo) == 0 and
                         len(self.pacientes_completados) == 0)
         
-        tiene_alguien_en_box = self.paciente_en_box is not None
+        tiene_alguien_en_resonador = self.paciente_en_resonador is not None
         
-        if not sistema_vacio and not tiene_alguien_en_box:
-            return  # Nadie está en el box (rosa), esperar
+        if not sistema_vacio and not tiene_alguien_en_resonador:
+            return  # Nadie está en el resonador (sala celeste), esperar
         
         # Ordenar por hora de llegada real (turno + desvío)
         self.pacientes_programados.sort(key=lambda p: p.hora_llegada_real)
@@ -168,27 +175,37 @@ class SimuladorResonador:
                     self.paciente_en_validacion = None
                     p.estado = 'BOX'
                     p.tiempo_en_etapa = 0
+                    p.tiempo_visual_en_etapa = 0  # Reset tiempo visual
                     p.definir_ruta(['salida_sala', 'pasillo_v', 'pasillo_v_arriba', 
                                    'pasillo_h', 'pasillo_h_derecha', 'entrada_vestuario', 
                                    'vestuario', 'box'])
                     self.paciente_en_box = p
         
-        # Box → Resonador
+        # Box → Resonador (con tiempo visual mínimo)
         if self.paciente_en_box and not self.paciente_en_box.moviendo:
             p = self.paciente_en_box
-            if p.tiempo_en_etapa >= p.tiempo_box:
+            # Verificar AMBOS: tiempo simulado Y tiempo visual mínimo
+            tiempo_simulado_cumplido = p.tiempo_en_etapa >= p.tiempo_box
+            tiempo_visual_cumplido = p.tiempo_visual_en_etapa >= config.TIEMPO_VISUAL_MINIMO_BOX
+            
+            if tiempo_simulado_cumplido and tiempo_visual_cumplido:
                 if not self.paciente_en_resonador:
                     self.paciente_en_box = None
                     p.estado = 'RESONADOR'
                     p.tiempo_en_etapa = 0
+                    p.tiempo_visual_en_etapa = 0  # Reset tiempo visual
                     p.definir_ruta(['vuelta_vestuario', 'entrada_resonancia', 
                                    'resonancia', 'resonador'])
                     self.paciente_en_resonador = p
         
-        # Resonador → SALIDA (NUEVO)
+        # Resonador → SALIDA (con tiempo visual mínimo)
         if self.paciente_en_resonador and not self.paciente_en_resonador.moviendo:
             p = self.paciente_en_resonador
-            if p.tiempo_en_etapa >= p.tiempo_total_resonador:
+            # Verificar AMBOS: tiempo simulado Y tiempo visual mínimo
+            tiempo_simulado_cumplido = p.tiempo_en_etapa >= p.tiempo_total_resonador
+            tiempo_visual_cumplido = p.tiempo_visual_en_etapa >= config.TIEMPO_VISUAL_MINIMO_RESONADOR
+            
+            if tiempo_simulado_cumplido and tiempo_visual_cumplido:
                 self.paciente_en_resonador = None
                 p.estado = 'SALIENDO'
                 p.ts_fin = self.datetime_actual
