@@ -57,6 +57,9 @@ class Paciente:
         self.tiempo_en_etapa = 0
         self.tiempo_total = 0
         
+        # Tiempo visual (en segundos reales para visualización)
+        self.tiempo_visual_en_etapa = 0.0
+        
     def _calcular_desvio(self):
         """Calcula el desvío de llegada según probabilidades"""
         r = random.random()
