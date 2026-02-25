@@ -13,27 +13,27 @@ INTERVALO_TURNOS = 30
 TIPOS_ESTUDIO = {
     'Cerebro': {
         'probabilidad': 0.25,
-        'tiempo_scan': (6, 9),  # Aumentado de (4,6)
+        'tiempo_scan': (12, 16),  # ~15 min promedio = 3 seg visuales
         'tiempo_posicionamiento': (1, 2)
     },
     'Columna': {
         'probabilidad': 0.25,
-        'tiempo_scan': (7, 10),  # Aumentado de (5,7)
+        'tiempo_scan': (13, 17),  # ~15 min promedio = 3 seg visuales
         'tiempo_posicionamiento': (1, 2)
     },
     'Articulaciones': {
         'probabilidad': 0.33,
-        'tiempo_scan': (6, 9),  # Aumentado de (4,6)
+        'tiempo_scan': (12, 16),  # ~15 min promedio = 3 seg visuales
         'tiempo_posicionamiento': (1, 2)
     },
     'Cuerpo completo': {
         'probabilidad': 0.02,
-        'tiempo_scan': (25, 35),  # Aumentado de (20,30)
+        'tiempo_scan': (30, 40),  # Mucho más largo
         'tiempo_posicionamiento': (2, 4)
     },
     'Otros': {
         'probabilidad': 0.15,
-        'tiempo_scan': (6, 10),  # Aumentado de (4,8)
+        'tiempo_scan': (12, 18),  # ~15 min promedio
         'tiempo_posicionamiento': (1, 3)
     }
 }
@@ -42,7 +42,7 @@ TIPOS_ESTUDIO = {
 # TIEMPOS DE PROCESO (tuplas min, max en minutos)
 # ============================================================================
 TIEMPO_VALIDACION = (3, 7)
-TIEMPO_BOX = (1, 2)  # REDUCIDO de (3,6) a (1,2) - solo cambiarse
+TIEMPO_BOX = (8, 12)  # ~10 min promedio = 2 seg visuales con velocidad 5x
 TIEMPO_SALIDA = (3, 5)
 
 # Probabilidades de llegada
@@ -126,6 +126,10 @@ ESTADOS_PACIENTE = {
 
 # Velocidad
 VELOCIDAD_PACIENTE = 120
-VELOCIDAD_SIMULACION_DEFAULT = 5  # REDUCIDA de 10 a 5 para ver mejor las llegadas
+VELOCIDAD_SIMULACION_DEFAULT = 5
 FPS = 60
 MOSTRAR_RESUMEN_FINAL = True
+
+# Tiempos visuales mínimos (en segundos reales, no minutos simulados)
+TIEMPO_VISUAL_MINIMO_BOX = 2.0  # 2 segundos mínimo visible en el box
+TIEMPO_VISUAL_MINIMO_RESONADOR = 3.0  # 3 segundos mínimo visible en el resonador
